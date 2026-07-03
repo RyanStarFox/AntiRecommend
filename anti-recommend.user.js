@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.3.0
+// @version      1.3.1
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -96,6 +96,36 @@
     }
   `;
 
+  // ── YouTube Shadow DOM CSS (minimal set — only end-screen, not info-cards) ─
+  // Info-card classes (.ytp-ce-*, .ytp-cards-*) are deliberately EXCLUDED —
+  // hiding them was the likely cause of the progress bar freezing bug in
+  // earlier versions.  They appear during normal playback; we only want to
+  // hide the post-video end-screen and pause overlay.
+  const PLAYER_SHADOW_CSS = `
+    .html5-endscreen,
+    .ytp-endscreen-content,
+    .ytp-pause-overlay,
+    .ytp-pause-overlay-container,
+    .ytp-autonav-endscreen-countdown-container,
+    .ytp-upnext,
+    .ytp-upnext-header,
+    .ytp-upnext-autoplay-icon,
+    .ytp-upnext-cancel-button {
+      display: none !important;
+    }
+  `;
+
+  const SHADOW_STYLE_ID = 'anti-recommend-shadow-style';
+
+  function injectStyleIntoShadow(shadowRoot) {
+    if (!shadowRoot || shadowRoot.getElementById(SHADOW_STYLE_ID)) return false;
+    const style = document.createElement('style');
+    style.id = SHADOW_STYLE_ID;
+    style.textContent = PLAYER_SHADOW_CSS;
+    shadowRoot.appendChild(style);
+    return true;
+  }
+
   function injectStyle() {
     if (document.getElementById(STYLE_ID)) return;
     const style = document.createElement('style');
@@ -143,20 +173,26 @@
     // Page-level DOM
     hideEndScreensInRoot(document);
 
-    // Known shadow hosts (if YouTube uses native Shadow DOM, these will have shadowRoot)
+    // Known shadow hosts — inject persistent CSS + direct DOM hiding
     for (const id of ['#movie_player', '#player']) {
       const host = document.querySelector(id);
-      if (host && host.shadowRoot) hideEndScreensInRoot(host.shadowRoot);
+      if (host && host.shadowRoot) {
+        injectStyleIntoShadow(host.shadowRoot);
+        hideEndScreensInRoot(host.shadowRoot);
+      }
     }
-    // ytd-player custom element — if it uses open shadow DOM
+    // ytd-player custom element (and any nested player inside it)
     const ytd = document.querySelector('ytd-player');
     if (ytd && ytd.shadowRoot) {
+      injectStyleIntoShadow(ytd.shadowRoot);
       hideEndScreensInRoot(ytd.shadowRoot);
-      // Also check nested player inside ytd-player's shadow
       for (const sel of ['#movie_player', '#player', '.html5-video-player']) {
         try {
           const inner = ytd.shadowRoot.querySelector(sel);
-          if (inner && inner.shadowRoot) hideEndScreensInRoot(inner.shadowRoot);
+          if (inner && inner.shadowRoot) {
+            injectStyleIntoShadow(inner.shadowRoot);
+            hideEndScreensInRoot(inner.shadowRoot);
+          }
         } catch (_) { /* ignore */ }
       }
     }
@@ -333,9 +369,9 @@
     const originalPlay = video.play.bind(video);
     video.play = function () {
       const elapsed = Date.now() - _biliLastVideoEnded;
-      // If play() is called within 10 seconds of a video ending AND the
+      // If play() is called within 3 seconds of a video ending AND the
       // current video has finished (ended or near the end), it's autoplay.
-      if (elapsed < 10000 && (video.ended || video.currentTime >= video.duration - 1)) {
+      if (elapsed < 3000 && (video.ended || video.currentTime >= video.duration - 1)) {
         _biliLastVideoEnded = 0; // reset
         return Promise.reject(new DOMException('Auto-play blocked by AntiRecommend', 'AbortError'));
       }
@@ -370,9 +406,14 @@
 
   function schedulePeriodic() {
     periodicTasks();
-    // Staggered retries — player UI loads asynchronously
-    [800, 2000, 5000, 12000].forEach(delay => {
-      setTimeout(() => { if (location.hostname.includes('youtube.com') || location.hostname.includes('bilibili.com')) periodicTasks(); }, delay);
+
+    // Early shadow-DOM injection attempts (unthrottled, before the 2s scan interval)
+    [300, 800, 1600, 3000, 6000].forEach(delay => {
+      setTimeout(() => {
+        const host = location.hostname;
+        if (host.includes('youtube.com')) scanAndHideEndScreens();
+        if (host.includes('youtube.com') || host.includes('bilibili.com')) periodicTasks();
+      }, delay);
     });
   }
 
