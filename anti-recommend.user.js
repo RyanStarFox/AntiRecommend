@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.3.1
+// @version      1.3.2
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -53,7 +53,8 @@
       display: none !important;
     }
 
-    /* Autoplay countdown + Up-Next panel */
+    /* Autoplay countdown overlay + Up-Next panel (near-end recommendations) */
+    .html5-video-player .ytp-autonav-endscreen-countdown-overlay,
     .html5-video-player .ytp-autonav-endscreen-countdown-container,
     .html5-video-player .ytp-upnext {
       display: none !important;
@@ -106,6 +107,8 @@
     .ytp-endscreen-content,
     .ytp-pause-overlay,
     .ytp-pause-overlay-container,
+    /* Autoplay countdown overlay — the whole "up next" panel */
+    .ytp-autonav-endscreen-countdown-overlay,
     .ytp-autonav-endscreen-countdown-container,
     .ytp-upnext,
     .ytp-upnext-header,
@@ -151,7 +154,9 @@
   const ENDSCREEN_SELECTORS = [
     '.html5-endscreen', '.ytp-endscreen-content',
     '.ytp-pause-overlay', '.ytp-pause-overlay-container',
-    '.ytp-autonav-endscreen-countdown-container', '.ytp-upnext'
+    '.ytp-autonav-endscreen-countdown-overlay',
+    '.ytp-autonav-endscreen-countdown-container',
+    '.ytp-upnext'
   ];
 
   function hideEndScreensInRoot(root) {
@@ -371,7 +376,7 @@
       const elapsed = Date.now() - _biliLastVideoEnded;
       // If play() is called within 3 seconds of a video ending AND the
       // current video has finished (ended or near the end), it's autoplay.
-      if (elapsed < 3000 && (video.ended || video.currentTime >= video.duration - 1)) {
+      if (elapsed < 5000 && (video.ended || video.currentTime >= video.duration - 1)) {
         _biliLastVideoEnded = 0; // reset
         return Promise.reject(new DOMException('Auto-play blocked by AntiRecommend', 'AbortError'));
       }
