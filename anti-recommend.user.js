@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.2.0
-// @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili (Shadow DOM robust)
+// @version      1.2.1
+// @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -115,29 +115,28 @@
   // and querySelectorAll() cannot reach these elements.  We inject this
   // stylesheet directly into the shadow root via JavaScript.
   const PLAYER_SHADOW_CSS = `
-    /* End-screen recommendation grid */
+    /*
+     * Use opacity+pointer-events instead of display:none.
+     * display:none removes elements from layout, which can trip up YouTube's
+     * player JavaScript when it tries to measure/animate end-screen elements,
+     * causing the progress bar to freeze near the video's end.
+     * opacity:0 keeps the element in layout flow but invisible and non-interactive.
+     */
     .ytp-endscreen-content,
     .html5-endscreen,
     .ytp-ce-element,
-
-    /* Pause overlay with video suggestions */
     .ytp-pause-overlay,
     .ytp-pause-overlay-container,
-
-    /* Info cards that pop up during playback */
     .ytp-ce-covering-overlay,
     .ytp-cards-teaser,
     .ytp-cards-button,
-
-    /* Autoplay countdown ("Next video in 5…") */
     .ytp-autonav-endscreen-countdown-container,
-
-    /* "Up next" panel in the player */
     .ytp-upnext,
     .ytp-upnext-header,
     .ytp-upnext-autoplay-icon,
     .ytp-upnext-cancel-button {
-      display: none !important;
+      opacity: 0 !important;
+      pointer-events: none !important;
     }
   `;
 
@@ -463,7 +462,36 @@
     setTimeout(() => disableAutoplayIfNeeded(), 100);
   }, true); // capture phase to get it before the site's own handler
 
+  // ── Bilibili video-ended interceptor ────────────────────────────────────
+  // Bilibili's playlist/collection auto-advance is sometimes controlled by
+  // a mechanism that our toggle-scan can't reach (e.g. inside a collapsed
+  // panel or a different component).  As a last line of defence we intercept
+  // the <video> ended event to prevent the player from loading the next video.
+
+  let _hookedBilibiliVideo = null;
+
+  function interceptBilibiliVideoEnded() {
+    const video = document.querySelector('#bilibili-player video, .bpx-player-video-wrap video');
+    if (!video || video === _hookedBilibiliVideo) return;
+    _hookedBilibiliVideo = video;
+
+    video.addEventListener('ended', function onEnded(e) {
+      // Pause the video (just in case) and stop the event from reaching
+      // Bilibili's own handler that would trigger the next video.
+      try { video.pause(); } catch (_) { /* ignore */ }
+      e.stopImmediatePropagation();
+    }, true); // capture phase — fires before Bilibili's own listener
+  }
+
+  // Throttle to avoid excessive DOM queries during high-frequency mutations
+  let lastMutationHandle = 0;
+  const MUTATION_HANDLE_COOLDOWN = 300;
+
   function handleMutations() {
+    const now = Date.now();
+    if (now - lastMutationHandle < MUTATION_HANDLE_COOLDOWN) return;
+    lastMutationHandle = now;
+
     const host = location.hostname;
     if (host.includes('youtube.com')) {
       hideYouTubeRecommendations();
@@ -472,6 +500,7 @@
     } else if (host.includes('bilibili.com')) {
       hideBilibiliRecommendations();
       disableBilibiliAutoplay();
+      interceptBilibiliVideoEnded();
     }
   }
 
