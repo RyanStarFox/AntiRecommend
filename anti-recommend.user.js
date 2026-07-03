@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.1.1
-// @description  Remove sidebar recommendations, end-screen recommendations, and disable autoplay on YouTube and Bilibili
+// @version      1.2.0
+// @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili (Shadow DOM robust)
 // @author       shao
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -194,66 +194,73 @@
     hideSelector('.right-container .pop-video');
   }
 
-  // ── YouTube Shadow DOM injection ─────────────────────────────────────────
-  // Tracks the last player element we injected into so we can re-inject
-  // after SPA navigation replaces the player.
-  let lastInjectedPlayer = null;
+  // ── Shadow DOM utilities ─────────────────────────────────────────────────
+
+  function injectStyleIntoShadow(shadowRoot) {
+    if (!shadowRoot || shadowRoot.getElementById(SHADOW_STYLE_ID)) return false;
+    const style = document.createElement('style');
+    style.id = SHADOW_STYLE_ID;
+    style.textContent = PLAYER_SHADOW_CSS;
+    shadowRoot.appendChild(style);
+    return true;
+  }
 
   /**
-   * Inject the anti-recommend stylesheet into YouTube's player shadow root.
-   * YouTube uses Shadow DOM for #movie_player, which isolates its internal
-   * elements from page-level CSS.  We must inject directly into the shadow.
+   * Search for elements matching a predicate inside a shadow root.
+   */
+  function queryShadowAll(shadowRoot, selector) {
+    try { return shadowRoot.querySelectorAll(selector); } catch (_) { return []; }
+  }
+
+  // ── YouTube Shadow DOM injection ─────────────────────────────────────────
+
+  /**
+   * Inject anti-recommend CSS into every shadow root that might contain
+   * YouTube player UI (.ytp-* elements).
+   *
+   * YouTube has several possible DOM layouts:
+   *   A) #movie_player in page DOM   → its shadowRoot holds the UI
+   *   B) #player in page DOM         → its shadowRoot holds the UI
+   *   C) ytd-player in page DOM      → its shadowRoot holds #movie_player
+   *                                       → #movie_player.shadowRoot holds UI
+   *   D) ytd-player in page DOM      → its shadowRoot directly holds UI
+   *                                      (no nested shadow on #movie_player)
    */
   function injectYouTubePlayerStyles() {
-    // Try direct #movie_player first (it's the shadow host in most layouts)
-    const player = document.querySelector('#movie_player');
-    if (player && player.shadowRoot) {
-      if (player !== lastInjectedPlayer) {
-        lastInjectedPlayer = player;
-        // Remove old style if somehow still present (shouldn't happen)
-        const old = player.shadowRoot.getElementById(SHADOW_STYLE_ID);
-        if (old) old.remove();
-      }
-      if (!player.shadowRoot.getElementById(SHADOW_STYLE_ID)) {
-        const style = document.createElement('style');
-        style.id = SHADOW_STYLE_ID;
-        style.textContent = PLAYER_SHADOW_CSS;
-        player.shadowRoot.appendChild(style);
-      }
-      return true;
-    }
+    let injected = false;
 
-    // Try ytd-player → shadowRoot → #movie_player (nested, older layout)
-    const ytdPlayer = document.querySelector('ytd-player');
-    if (ytdPlayer && ytdPlayer.shadowRoot) {
-      const inner = ytdPlayer.shadowRoot.querySelector('#movie_player') ||
-                    ytdPlayer.shadowRoot.querySelector('#player');
-      if (inner && inner.shadowRoot) {
-        if (inner !== lastInjectedPlayer) {
-          lastInjectedPlayer = inner;
-          const old = inner.shadowRoot.getElementById(SHADOW_STYLE_ID);
-          if (old) old.remove();
-        }
-        if (!inner.shadowRoot.getElementById(SHADOW_STYLE_ID)) {
-          const style = document.createElement('style');
-          style.id = SHADOW_STYLE_ID;
-          style.textContent = PLAYER_SHADOW_CSS;
-          inner.shadowRoot.appendChild(style);
-        }
-        return true;
+    // --- Case A/B: player host directly in the page DOM --------------------
+    for (const id of ['#movie_player', '#player']) {
+      const host = document.querySelector(id);
+      if (host && host.shadowRoot) {
+        injected = injectStyleIntoShadow(host.shadowRoot) || injected;
       }
     }
 
-    return false;
+    // --- Case C/D: ytd-player custom element -------------------------------
+    const ytd = document.querySelector('ytd-player');
+    if (ytd && ytd.shadowRoot) {
+      // Case D: .ytp-* elements might be directly inside ytd-player's shadow
+      injected = injectStyleIntoShadow(ytd.shadowRoot) || injected;
+
+      // Case C: a nested #movie_player / #player with its own shadow root
+      for (const sel of ['#movie_player', '#player', '.html5-video-player']) {
+        const inner = queryShadowAll(ytd.shadowRoot, sel)[0];
+        if (inner && inner.shadowRoot) {
+          injected = injectStyleIntoShadow(inner.shadowRoot) || injected;
+        }
+      }
+    }
+
+    return injected;
   }
 
   /**
    * YouTube's player is created asynchronously — retry until we find it.
    */
   function schedulePlayerShadowInjection() {
-    if (injectYouTubePlayerStyles()) return; // already done
+    if (injectYouTubePlayerStyles()) return;
 
-    // Retry: player may not exist yet or shadowRoot may not be attached
     [500, 1500, 4000, 10000].forEach(delay => {
       setTimeout(() => {
         if (location.hostname.includes('youtube.com')) {
@@ -265,66 +272,109 @@
 
   // ── Autoplay prevention ─────────────────────────────────────────────────
 
+  function isElementOn(el) {
+    if (!el || el.disabled) return false;
+    try {
+      const cls = (typeof el.className === 'string') ? el.className : '';
+      return (
+        el.getAttribute('aria-pressed') === 'true' ||
+        el.getAttribute('aria-checked') === 'true' ||
+        el.hasAttribute('checked') ||
+        el.hasAttribute('active') ||
+        cls.includes('active') ||
+        cls.includes('ytp-autonav-toggle-button--active') ||
+        cls.includes('on') && !cls.includes('off') ||
+        (el.tagName === 'INPUT' && el.type === 'checkbox' && el.checked)
+      );
+    } catch (_) { return false; }
+  }
+
+  function tryToggleOff(el) {
+    if (isElementOn(el)) {
+      try { el.click(); } catch (_) { /* ignore */ }
+      return true;
+    }
+    return false;
+  }
+
   /**
-   * Find an autoplay toggle on the page and ensure it is OFF.
-   * Returns true if it performed a click.
+   * Search elements (page-DOM NodeList or array) for toggles to turn off.
+   */
+  function scanAndDisable(nodeList, keywordRegex) {
+    let clicked = false;
+    for (const el of nodeList) {
+      // Match by keyword in aria-label / title / data-tooltip / textContent
+      const haystack = [
+        el.getAttribute('aria-label') || '',
+        el.getAttribute('data-tooltip-text') || '',
+        el.getAttribute('title') || '',
+        el.getAttribute('data-name') || '',
+        el.getAttribute('data-title') || '',
+        (el.textContent || '').slice(0, 60)
+      ].join(' ');
+      if (keywordRegex.test(haystack)) {
+        clicked = tryToggleOff(el) || clicked;
+      }
+    }
+    return clicked;
+  }
+
+  const AUTOPLAY_RE = /autoplay|自动播放|自动连播|auto-play|auto_play/i;
+
+  /**
+   * Find YouTube's autoplay toggle and ensure it is OFF.
    */
   function disableYouTubeAutoplay() {
     let clicked = false;
 
-    const tryToggle = (el) => {
-      if (!el || el.disabled) return;
-      // aria-pressed="true" means autoplay is currently ON → click to turn off
-      const pressed =
-        el.getAttribute('aria-pressed') === 'true' ||
-        el.getAttribute('aria-checked') === 'true' ||
-        el.classList.contains('ytp-autonav-toggle-button--active') ||
-        el.hasAttribute('checked') ||
-        el.hasAttribute('active');
-      if (pressed) {
-        el.click();
-        clicked = true;
-      }
-    };
-
-    // Desktop player: the autoplay toggle switch in the control bar
-    document.querySelectorAll(
-      '.ytp-autonav-toggle-button, ' +
-      'button[data-tooltip-text*="Autoplay" i], ' +
-      'button[data-tooltip-text*="自动播放" i], ' +
-      'button[aria-label*="Autoplay" i], ' +
-      'button[aria-label*="自动播放" i], ' +
-      'tp-yt-paper-toggle-button[aria-label*="autoplay" i], ' +
-      'tp-yt-paper-toggle-button[aria-label*="自动播放" i]'
-    ).forEach(tryToggle);
-
-    // Also search broadly by text / tooltip in the page-level DOM
-    document.querySelectorAll('.ytp-chrome-controls button, ytd-watch-flexy button')
-      .forEach(btn => {
-        const label = (btn.getAttribute('aria-label') || '') +
-          (btn.getAttribute('data-tooltip-text') || '') +
-          (btn.getAttribute('title') || '') +
-          (btn.textContent || '');
-        if (/autoplay|自动播放/i.test(label)) {
-          tryToggle(btn);
-        }
-      });
-
-    // YouTube's autoplay toggle is inside #movie_player's Shadow DOM
-    const player = document.querySelector('#movie_player');
-    if (player && player.shadowRoot) {
-      player.shadowRoot.querySelectorAll(
+    // --- Page-level DOM ----------------------------------------------------
+    clicked = scanAndDisable(
+      document.querySelectorAll(
         '.ytp-autonav-toggle-button, ' +
         'button[data-tooltip-text*="Autoplay" i], ' +
         'button[data-tooltip-text*="自动播放" i], ' +
         'button[aria-label*="Autoplay" i], ' +
         'button[aria-label*="自动播放" i], ' +
         'tp-yt-paper-toggle-button'
-      ).forEach(tryToggle);
+      ),
+      AUTOPLAY_RE
+    ) || clicked;
+
+    // --- Shadow DOM: #movie_player / #player --------------------------------
+    for (const id of ['#movie_player', '#player']) {
+      const host = document.querySelector(id);
+      if (host && host.shadowRoot) {
+        clicked = scanAndDisable(
+          queryShadowAll(host.shadowRoot, '.ytp-autonav-toggle-button, button'),
+          AUTOPLAY_RE
+        ) || clicked;
+      }
+    }
+
+    // --- Shadow DOM: ytd-player (and nested) -------------------------------
+    const ytd = document.querySelector('ytd-player');
+    if (ytd && ytd.shadowRoot) {
+      clicked = scanAndDisable(
+        queryShadowAll(ytd.shadowRoot, '.ytp-autonav-toggle-button, button'),
+        AUTOPLAY_RE
+      ) || clicked;
+
+      // Nested player inside ytd-player's shadow
+      for (const sel of ['#movie_player', '#player', '.html5-video-player']) {
+        const inner = queryShadowAll(ytd.shadowRoot, sel)[0];
+        if (inner && inner.shadowRoot) {
+          clicked = scanAndDisable(
+            queryShadowAll(inner.shadowRoot, '.ytp-autonav-toggle-button, button'),
+            AUTOPLAY_RE
+          ) || clicked;
+        }
+      }
     }
 
     return clicked;
   }
+
+  const BILI_AUTOPLAY_RE = /autoplay|自动播放|连播|auto.play|playmode|play_mode/i;
 
   /**
    * Disable Bilibili autoplay / playlist-auto-next.
@@ -332,35 +382,49 @@
   function disableBilibiliAutoplay() {
     let clicked = false;
 
-    const tryToggle = (el) => {
-      if (!el || el.disabled) return;
-      // Check if it looks "active" (autoplay ON)
-      const cls = el.className || '';
-      const isOn =
-        cls.includes('active') ||
-        cls.includes('on') ||
-        cls.includes('selected') ||
-        el.getAttribute('aria-pressed') === 'true' ||
-        el.getAttribute('aria-checked') === 'true';
-      if (isOn) {
-        el.click();
-        clicked = true;
-      }
-    };
+    // --- Specific Bpx player controls --------------------------------------
+    clicked = scanAndDisable(
+      document.querySelectorAll(
+        '.bpx-player-ctrl-playmode, ' +
+        '.bpx-player-ctrl-btn, ' +
+        '.bpx-player-dpl-toggle, ' +
+        '.bpx-player-ctrl-setting-item, ' +
+        '.bpx-player-video-info-playmode, ' +
+        'button[data-name*="autoplay" i], ' +
+        'button[data-name*="playmode" i], ' +
+        'button[data-name*="order" i], ' +
+        'div[data-name*="autoplay" i]'
+      ),
+      BILI_AUTOPLAY_RE
+    ) || clicked;
 
-    // Bpx player play-mode / autoplay controls
-    document.querySelectorAll(
-      '.bpx-player-ctrl-playmode, ' +
-      '.bpx-player-ctrl-btn[aria-label*="播" i], ' +
-      '.bpx-player-ctrl-btn[aria-label*="自动" i], ' +
-      '.bpx-player-ctrl-btn[data-name*="playmode" i], ' +
-      '.bpx-player-ctrl-btn[data-name*="autoplay" i], ' +
-      'button[aria-label*="自动播放" i], ' +
-      'button[aria-label*="连播" i], ' +
-      'button[aria-label*="autoplay" i], ' +
-      '.bpx-player-ctrl-setting-item, ' +
-      '.bpx-player-dpl-toggle'
-    ).forEach(tryToggle);
+    // --- Broader scan: any button / toggle in the player area --------------
+    clicked = scanAndDisable(
+      document.querySelectorAll(
+        '#bilibili-player button, ' +
+        '#bilibili-player [role="switch"], ' +
+        '#bilibili-player [role="button"], ' +
+        '#playerWrap button, ' +
+        '#playerWrap [role="switch"], ' +
+        '.bpx-player-container button, ' +
+        '.bpx-player-container [role="switch"], ' +
+        '.bpx-player-primary-area button'
+      ),
+      BILI_AUTOPLAY_RE
+    ) || clicked;
+
+    // --- Playlist-panel autoplay controls -----------------------------------
+    clicked = scanAndDisable(
+      document.querySelectorAll(
+        '.bpx-player-dpl-panel button, ' +
+        '.bpx-player-dpl-panel [role="switch"], ' +
+        '.player-auxiliary-playlist button, ' +
+        '.base-player-auxiliary-playlist button, ' +
+        '.bpx-player-video-info button, ' +
+        '.bpx-player-ending-functions button'
+      ),
+      BILI_AUTOPLAY_RE
+    ) || clicked;
 
     return clicked;
   }
