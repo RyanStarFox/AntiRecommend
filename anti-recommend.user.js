@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.4.2
+// @version      1.4.3
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -73,15 +73,6 @@
       visibility: hidden !important;
     }
 
-    /*
-     * Replay overlay — the large play/replay button that appears after a
-     * video ends.  Only target it in ended-mode so normal pause state
-     * isn't affected.
-     */
-    .ended-mode .ytp-large-play-button {
-      visibility: hidden !important;
-    }
-
     /* ===== Bilibili ===== */
 
     /* Sidebar recommendation panels */
@@ -148,10 +139,6 @@
     .ytp-cards-button {
       visibility: hidden !important;
     }
-    /* Replay button in ended-mode */
-    .ended-mode .ytp-large-play-button {
-      visibility: hidden !important;
-    }
   `;
 
   const SHADOW_STYLE_ID = 'anti-recommend-shadow-style';
@@ -174,6 +161,37 @@
   }
 
   injectStyle();
+
+  // ── YouTube replay prevention ───────────────────────────────────────────
+
+  let _ytVideoHooked = false;
+  function preventYouTubeReplay() {
+    if (_ytVideoHooked) return;
+    const video = document.querySelector('#movie_player video');
+    if (!video) return;
+    _ytVideoHooked = true;
+
+    // Ensure loop is off
+    video.loop = false;
+
+    // When the video ends, prevent auto-replay
+    video.addEventListener('ended', () => {
+      video.pause();
+      video.loop = false;
+      // Re-check: if YouTube's JS set loop back, remove it again
+      video.removeAttribute('loop');
+    }, true);
+
+    // Intercept play() to block replay after the video has finished
+    const origPlay = video.play.bind(video);
+    video.play = function () {
+      if (video.ended || video.currentTime >= video.duration - 0.5) {
+        // Video already ended — block replay
+        return Promise.reject(new DOMException('Replay blocked', 'AbortError'));
+      }
+      return origPlay();
+    };
+  }
 
   // ── DOM utilities ────────────────────────────────────────────────────────
 
@@ -199,8 +217,7 @@
   // visibility:hidden — for info cards (keep layout to avoid JS crash / progress-bar freeze)
   const HIDE_VISIBILITY_SELECTORS = [
     '.ytp-ce-element', '.ytp-ce-shadow',
-    '.ytp-cards-teaser', '.ytp-cards-button',
-    '.ended-mode .ytp-large-play-button'
+    '.ytp-cards-teaser', '.ytp-cards-button'
   ];
 
   function hideEndScreensInRoot(root) {
@@ -531,7 +548,7 @@
     const isBili = host.includes('bilibili.com');
 
     // End-screen scan (own throttle)
-    if (isYT) scanAndHideEndScreens();
+    if (isYT) { scanAndHideEndScreens(); preventYouTubeReplay(); }
 
     // Autoplay toggle
     if (now - _lastAutoplayDisable >= AUTOPLAY_COOLDOWN) {
