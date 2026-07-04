@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.3.3
+// @version      1.4.0
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -392,34 +392,64 @@
     return clicked;
   }
 
-  // ── Bilibili play() interception (last-resort defence) ──────────────────
+  // ── Bilibili auto-advance interceptor ────────────────────────────────────
+  //
+  // Bilibili collection/playlist auto-advance happens via page navigation
+  // (history.pushState), not via video.play().  We intercept the History API
+  // to block programmatic navigation that occurs shortly after a video ends.
+  // User-initiated clicks on "next video" are allowed through.
 
   let _biliLastVideoEnded = 0;
+  let _biliLastUserClick = 0;
 
-  function hookBilibiliVideo() {
+  // Track video element ended events
+  function _hookBiliVideoEvent() {
     const video = document.querySelector('#bilibili-player video, .bpx-player-video-wrap video');
-    if (!video) return;
-    if (video.dataset.antiRecHooked) return;
+    if (!video || video.dataset.antiRecHooked) return;
     video.dataset.antiRecHooked = '1';
-
-    // Track when the video ends
     video.addEventListener('ended', () => {
       _biliLastVideoEnded = Date.now();
     }, true);
-
-    // Override play() to block auto-play after a video ends
-    const originalPlay = video.play.bind(video);
-    video.play = function () {
-      const elapsed = Date.now() - _biliLastVideoEnded;
-      // If play() is called within 3 seconds of a video ending AND the
-      // current video has finished (ended or near the end), it's autoplay.
-      if (elapsed < 5000 && (video.ended || video.currentTime >= video.duration - 1)) {
-        _biliLastVideoEnded = 0; // reset
-        return Promise.reject(new DOMException('Auto-play blocked by AntiRecommend', 'AbortError'));
-      }
-      return originalPlay();
-    };
   }
+
+  // Track user clicks to distinguish auto-advance from intentional navigation
+  function _installClickTracker() {
+    if (document.body.dataset.antiRecClickTracked) return;
+    document.body.dataset.antiRecClickTracked = '1';
+    document.addEventListener('click', () => {
+      _biliLastUserClick = Date.now();
+    }, true);
+    // Also track keyboard navigation
+    document.addEventListener('keydown', () => {
+      _biliLastUserClick = Date.now();
+    }, true);
+  }
+
+  // History API interception — installed once at script load time
+  (function _interceptHistory() {
+    const _push = history.pushState;
+    const _replace = history.replaceState;
+
+    function blockIfAutoAdvance(method) {
+      return function (state, title, url) {
+        if (location.hostname.includes('bilibili.com') && url) {
+          const sinceEnded = Date.now() - _biliLastVideoEnded;
+          const sinceClick = Date.now() - _biliLastUserClick;
+          // Block if: video ended < 8s ago AND user hasn't clicked in 2.5s
+          // (A user click would mean they intentionally chose the next video)
+          if (sinceEnded < 8000 && sinceClick > 2500) {
+            console.log('[AntiRecommend] Blocked auto-advance to:', url);
+            _biliLastVideoEnded = 0;
+            return;
+          }
+        }
+        return method.apply(this, arguments);
+      };
+    }
+
+    history.pushState = blockIfAutoAdvance(_push);
+    history.replaceState = blockIfAutoAdvance(_replace);
+  })();
 
   // ── Scheduler ────────────────────────────────────────────────────────────
 
@@ -440,8 +470,9 @@
       _lastAutoplayDisable = now;
       if (isYT) disableYouTubeAutoplay();
       if (isBili) {
+        _installClickTracker();
         disableBilibiliAutoplay();
-        hookBilibiliVideo();
+        _hookBiliVideoEvent();
       }
     }
   }
