@@ -14,6 +14,7 @@
 |---|---|---|
 | 🚫 | Hide sidebar recommendations | 隐藏侧边栏推荐 |
 | 🎬 | Hide in-player end-screen recommendations | 隐藏播放器内结束页推荐 |
+| 🧹 | Hide page ads and promoted cards (Bilibili) | 隐藏页面广告和推广卡片（Bilibili） |
 | ⏸️ | Hide pause overlay suggestions (YouTube) | 隐藏暂停时的推荐浮层（YouTube） |
 | 🔁 | Disable autoplay / auto-advance | 关闭自动播放 / 自动连播 |
 | ⚡ | Inject CSS at `document-start` — no flicker | 在页面加载前注入 CSS，无闪烁 |
@@ -80,9 +81,9 @@ Anti-Recommend 采用多层策略拦截推荐，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm Tampermonkey shows the latest version (currently **v1.5.5**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm Tampermonkey shows the latest version (currently **v1.5.7**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认 Tampermonkey 中脚本版本为最新（当前 **v1.5.5**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认 Tampermonkey 中脚本版本为最新（当前 **v1.5.7**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.6
+// @version      1.5.7
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -116,6 +116,13 @@
     .right-container .pop-video,
     .right-container .video-card-ad-small,
     .video-card-ad-small,
+    .right-container .ad-report,
+    .right-container .ad-report-inner,
+    .right-container .right-bottom-banner,
+    .right-container .ad-floor-exp,
+    .right-container .ad-floor-cover,
+    .right-container .slide-ad-exp,
+    .bpx-player-adv-dm-wrap,
     .video-tag-container + .popular-video-container {
       display: none !important;
     }
@@ -493,6 +500,13 @@
     hideSelector('.right-container .pop-video');
     hideSelector('.right-container .video-card-ad-small');
     hideSelector('.video-card-ad-small');
+    hideSelector('.right-container .ad-report');
+    hideSelector('.right-container .ad-report-inner');
+    hideSelector('.right-container .right-bottom-banner');
+    hideSelector('.right-container .ad-floor-exp');
+    hideSelector('.right-container .ad-floor-cover');
+    hideSelector('.right-container .slide-ad-exp');
+    hideSelector('.bpx-player-adv-dm-wrap');
   }
 
   // ── Autoplay prevention ─────────────────────────────────────────────────
