@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.8
+// @version      1.5.9
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -95,6 +95,30 @@
     .html5-video-player .ytp-cards-teaser,
     .html5-video-player .ytp-cards-button {
       visibility: hidden !important;
+    }
+
+    /* Page ads and in-player overlay ads. Do not hide skip buttons. */
+    ytd-ad-slot-renderer,
+    ytd-display-ad-renderer,
+    ytd-promoted-sparkles-web-renderer,
+    ytd-promoted-video-renderer,
+    ytd-in-feed-ad-layout-renderer,
+    ytd-rich-item-renderer:has(ytd-ad-slot-renderer),
+    ytd-rich-item-renderer:has(ytd-display-ad-renderer),
+    ytd-rich-item-renderer:has(ytd-promoted-sparkles-web-renderer),
+    ytd-compact-promoted-video-renderer,
+    ytd-action-companion-ad-renderer,
+    ytd-companion-slot-renderer,
+    ytd-player-legacy-desktop-watch-ads-renderer,
+    .ytd-ad-slot-renderer,
+    .ytp-ad-overlay-container,
+    .ytp-ad-overlay-slot,
+    .ytp-ad-player-overlay,
+    .ytp-ad-text-overlay,
+    .ytp-ad-image-overlay,
+    .ytp-ad-action-interstitial,
+    .ytp-ad-survey {
+      display: none !important;
     }
 
     /* ===== Bilibili ===== */
@@ -480,6 +504,48 @@
   function hideYouTubeRecommendations() {
     hideSelector('ytd-watch-next-secondary-results-renderer');
     hideSelector('ytm-item-section-renderer#related');
+    hideYouTubeAds();
+  }
+
+  function hideYouTubeAds() {
+    hideSelector('ytd-ad-slot-renderer');
+    hideSelector('ytd-display-ad-renderer');
+    hideSelector('ytd-promoted-sparkles-web-renderer');
+    hideSelector('ytd-promoted-video-renderer');
+    hideSelector('ytd-in-feed-ad-layout-renderer');
+    hideSelector('ytd-compact-promoted-video-renderer');
+    hideSelector('ytd-action-companion-ad-renderer');
+    hideSelector('ytd-companion-slot-renderer');
+    hideSelector('ytd-player-legacy-desktop-watch-ads-renderer');
+    hideSelector('.ytp-ad-overlay-container');
+    hideSelector('.ytp-ad-overlay-slot');
+    hideSelector('.ytp-ad-player-overlay');
+    hideSelector('.ytp-ad-text-overlay');
+    hideSelector('.ytp-ad-image-overlay');
+    hideSelector('.ytp-ad-action-interstitial');
+    hideSelector('.ytp-ad-survey');
+  }
+
+  function clickYouTubeAdControls() {
+    const selectors = [
+      'button.ytp-ad-skip-button',
+      'button.ytp-ad-skip-button-modern',
+      'button.ytp-skip-ad-button',
+      '.ytp-ad-skip-button',
+      '.ytp-ad-skip-button-modern',
+      '.ytp-skip-ad-button',
+      'button.ytp-ad-overlay-close-button',
+      '.ytp-ad-overlay-close-button',
+      '.ytp-ad-close-button',
+      '.ytp-ad-close-button-modern'
+    ];
+    for (const sel of selectors) {
+      try {
+        document.querySelectorAll(sel).forEach(el => {
+          if (!el.disabled) el.click();
+        });
+      } catch (_) { /* ignore */ }
+    }
   }
 
   function hideBilibiliRecommendations() {
@@ -682,7 +748,12 @@
     const isBili = host.includes('bilibili.com');
 
     // End-screen scan (own throttle)
-    if (isYT) { scanAndHideEndScreens(); preventYouTubeReplay(); }
+    if (isYT) {
+      scanAndHideEndScreens();
+      preventYouTubeReplay();
+      hideYouTubeAds();
+      clickYouTubeAdControls();
+    }
 
     // Autoplay toggle
     if (now - _lastAutoplayDisable >= AUTOPLAY_COOLDOWN) {
