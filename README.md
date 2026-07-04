@@ -36,23 +36,80 @@
 
 ## Installation / 安装
 
-### Option 1 — Greasy Fork（推荐 / Recommended）
+### Step 1 — Choose a userscript manager / 选择脚本管理器
 
-1. Install a userscript manager / 安装脚本管理器：
-   - **Chrome / Edge / Firefox** → [Tampermonkey](https://www.tampermonkey.net/)
-   - **Safari** → [Userscripts](https://apps.apple.com/app/userscripts/id1463298887)（免费开源 / free & open-source）
-2. Install the script / 安装脚本：
+| Browser / 浏览器 | Recommended / 推荐 | Download / 下载 |
+|---|---|---|
+| Chrome | [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo) | Chrome Web Store |
+| Microsoft Edge | [Tampermonkey](https://microsoftedge.microsoft.com/addons/detail/tampermonkey/iikmkjmpaadaobahmlepeloendndfphd) | Edge Add-ons |
+| Firefox | [Tampermonkey](https://addons.mozilla.org/firefox/addon/tampermonkey/) or [Violentmonkey](https://addons.mozilla.org/firefox/addon/violentmonkey/) | Firefox Add-ons |
+| Safari (macOS / iOS) | [Userscripts](https://apps.apple.com/app/userscripts/id1463298887) | App Store（免费开源 / free & open-source） |
+| Brave / Opera / Vivaldi | [Tampermonkey](https://www.tampermonkey.net/) | 官网选择对应浏览器 / pick your browser on the site |
+
+> **Safari 用户注意：** Userscripts 是 Safari 上最常用的脚本管理器，需在系统设置中授予扩展权限后才能在网页上运行脚本。
+>
+> **Safari note:** Userscripts is the most common manager on Safari. Grant the extension permission in System Settings before scripts can run on web pages.
+
+---
+
+### Step 2 — Install Anti-Recommend / 安装脚本
+
+#### Option A — Greasy Fork（推荐 / Recommended）
+
+1. 确保已安装并启用上面的脚本管理器 / Make sure your userscript manager is installed and enabled.
+2. 打开安装页 / Open the install page:
    - [Greasy Fork — Anti-Recommend](https://greasyfork.org/scripts/anti-recommend)
+3. 点击 **Install** / **安装**，在弹窗中确认 / confirm in the popup.
 
-### Option 2 — From Source / 从源码安装
+#### Option B — GitHub 源码 / From source
 
 ```bash
 git clone https://github.com/RyanStarFox/AntiRecommend.git
 ```
 
-Open your userscript manager dashboard, create a new script, and paste the contents of `anti-recommend.user.js`.
+**Tampermonkey / Violentmonkey：**
 
-打开脚本管理器，新建脚本，粘贴 `anti-recommend.user.js` 的内容即可。
+1. 点击浏览器工具栏中的扩展图标 → **Dashboard / 管理面板**
+2. 点击 **+** 或 **Create a new script / 新建脚本**
+3. 删除默认内容，粘贴 `anti-recommend.user.js` 的全部内容
+4. 保存（`Cmd+S` / `Ctrl+S`）
+
+**Safari — Userscripts：**
+
+1. 打开 Userscripts App → **Settings / 设置** → 启用 Safari 扩展
+2. 在 Safari 中打开 **Settings → Extensions → Userscripts**，允许在目标网站运行
+3. 将 `anti-recommend.user.js` 导入 Userscripts（可通过 iCloud 同步或本地文件导入）
+4. 在 Userscripts 中为 `youtube.com` 和 `bilibili.com` 启用该脚本
+
+---
+
+## Usage / 使用方法
+
+安装完成后**无需额外配置**，脚本会在匹配的页面自动生效：
+
+Once installed, the script runs automatically on matching pages — no extra setup needed.
+
+1. **打开目标网站 / Open a supported site**
+   - YouTube：`https://www.youtube.com`
+   - Bilibili：`https://www.bilibili.com/video/...`
+
+2. **确认脚本已启用 / Confirm the script is active**
+   - Tampermonkey：点击扩展图标，确认 Anti-Recommend 为 **Enabled / 已启用**
+   - Userscripts：在 Safari 扩展菜单中确认脚本对当前站点已开启
+
+3. **刷新页面 / Refresh the page**
+   - 首次安装或更新后，建议硬刷新：`Cmd+Shift+R`（macOS）或 `Ctrl+Shift+R`（Windows / Linux）
+   - After installing or updating, do a hard refresh to load the latest script
+
+4. **验证效果 / Verify it works**
+   - YouTube：侧边栏推荐消失；视频结束后不再弹出推荐网格；可跳过广告时会自动点击
+   - Bilibili：右侧推荐列表、推广卡片、页面广告位被隐藏；自动连播会被关闭
+
+5. **更新脚本 / Update the script**
+   - Tampermonkey 默认会自动检查更新；也可在 Dashboard 中手动点击 **Check for userscript updates**
+   - Userscripts 需重新导入新版本，或通过 iCloud 同步更新
+
+> 当前最新版本 / Latest version: **v1.5.10**
 
 ---
 
@@ -84,9 +141,9 @@ Anti-Recommend 采用多层策略拦截推荐，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm Tampermonkey shows the latest version (currently **v1.5.9**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.5.10**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认 Tampermonkey 中脚本版本为最新（当前 **v1.5.9**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.5.10**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**
