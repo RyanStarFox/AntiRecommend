@@ -118,3 +118,7 @@ Issues and pull requests are welcome!
 ## Author / 作者
 
 **[ryanstarfox](https://github.com/RyanStarFox)**
+
+---
+
+本开源项目已链接并认可 [LINUX DO 社区](https://linux.do)。
