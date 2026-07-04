@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.0
+// @version      1.5.1
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -322,28 +322,38 @@
     if (!player) return;
     _endscreenObserverInstalled = true;
 
+    const END_RE = /html5-endscreen|ytp-endscreen|ytp-ce-element|ytp-cards-teaser|ytp-pause-overlay/;
     const observer = new MutationObserver(mutations => {
       for (const m of mutations) {
         if (m.type === 'childList') {
           for (const node of m.addedNodes) {
-            if (node.nodeType === 1) {
-              const cls = node.className || '';
-              if (/html5-endscreen|ytp-endscreen/.test(cls)) {
-                node.style.setProperty('display', 'none', 'important');
-              }
+            if (node.nodeType !== 1) continue;
+            const cls = node.className || '';
+            if (END_RE.test(cls)) {
+              node.style.setProperty('display', 'none', 'important');
             }
+            // Also check children of added nodes
+            try {
+              node.querySelectorAll?.('*').forEach(child => {
+                const cCls = child.className || '';
+                if (END_RE.test(cCls)) {
+                  child.style.setProperty('display', 'none', 'important');
+                }
+              });
+            } catch (_) { /* ignore */ }
           }
-        } else if (m.type === 'attributes' && m.attributeName === 'style') {
+        } else if (m.type === 'attributes') {
           const el = m.target;
-          const cls = el.className || '';
-          if (/html5-endscreen|ytp-endscreen/.test(cls)) {
+          const cls = (typeof el.className === 'string') ? el.className : '';
+          if (END_RE.test(cls)) {
             el.style.setProperty('display', 'none', 'important');
           }
         }
       }
     });
 
-    observer.observe(player, { childList: true, attributes: true, subtree: true, attributeFilter: ['style'] });
+    // Watch for style changes AND class changes (YouTube may toggle visibility via classes)
+    observer.observe(player, { childList: true, attributes: true, subtree: true, attributeFilter: ['style', 'class'] });
   }
 
   // ── Recommendation hiding (page-level DOM only) ─────────────────────────
