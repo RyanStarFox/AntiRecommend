@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.1
+// @version      1.5.2
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -56,6 +56,13 @@
     /* Autoplay countdown overlay + Up-Next panel (near-end recommendations) */
     .html5-video-player .ytp-autonav-endscreen-countdown-overlay,
     .html5-video-player .ytp-autonav-endscreen-countdown-container,
+    .html5-video-player .ytp-autonav-endscreen-overlay,
+    .html5-video-player .ytp-autonav-endscreen-upnext-container,
+    .html5-video-player .ytp-autonav-endscreen-upnext-alternative-header,
+    .html5-video-player .ytp-autonav-endscreen-video-info,
+    .html5-video-player .ytp-autonav-endscreen-button-container,
+    .html5-video-player .ytp-autonav-endscreen-stay-button-container,
+    .html5-video-player .ytp-autonav-endscreen,
     .html5-video-player .ytp-upnext {
       display: none !important;
     }
@@ -123,6 +130,13 @@
     /* Autoplay countdown overlay */
     .ytp-autonav-endscreen-countdown-overlay,
     .ytp-autonav-endscreen-countdown-container,
+    .ytp-autonav-endscreen-overlay,
+    .ytp-autonav-endscreen-upnext-container,
+    .ytp-autonav-endscreen-upnext-alternative-header,
+    .ytp-autonav-endscreen-video-info,
+    .ytp-autonav-endscreen-button-container,
+    .ytp-autonav-endscreen-stay-button-container,
+    .ytp-autonav-endscreen,
     .ytp-upnext,
     .ytp-upnext-header,
     .ytp-upnext-autoplay-icon,
@@ -251,6 +265,13 @@
     '.ytp-pause-overlay', '.ytp-pause-overlay-container',
     '.ytp-autonav-endscreen-countdown-overlay',
     '.ytp-autonav-endscreen-countdown-container',
+    '.ytp-autonav-endscreen-overlay',
+    '.ytp-autonav-endscreen-upnext-container',
+    '.ytp-autonav-endscreen-upnext-alternative-header',
+    '.ytp-autonav-endscreen-video-info',
+    '.ytp-autonav-endscreen-button-container',
+    '.ytp-autonav-endscreen-stay-button-container',
+    '.ytp-autonav-endscreen',
     '.ytp-upnext'
   ];
 
@@ -322,7 +343,7 @@
     if (!player) return;
     _endscreenObserverInstalled = true;
 
-    const END_RE = /html5-endscreen|ytp-endscreen|ytp-ce-element|ytp-cards-teaser|ytp-pause-overlay/;
+    const END_RE = /html5-endscreen|ytp-endscreen|ytp-autonav-endscreen|ytp-ce-element|ytp-cards-teaser|ytp-pause-overlay/;
     const observer = new MutationObserver(mutations => {
       for (const m of mutations) {
         if (m.type === 'childList') {
