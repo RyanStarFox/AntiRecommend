@@ -1,9 +1,9 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.4
+// @version      1.5.5
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
-// @author       shao
+// @author       ryanstarfox
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
 // @match        https://www.bilibili.com/video/*
