@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.4.4
+// @version      1.4.5
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -380,16 +380,13 @@
   const AUTOPLAY_RE = /autoplay|自动播放|自动连播|auto.play|auto_play/i;
 
   function disableYouTubeAutoplay() {
-    // The YouTube autoplay toggle is a <button> inside #movie_player:
-    //   <button class="ytp-button ytp-autonav-toggle"
-    //           aria-label="自动播放模式已开启">
-    // When ON, aria-label contains "已开启".  Click it to turn OFF.
-    // The button is in the page DOM (no shadow root involved).
-    const btn = document.querySelector(
-      'button.ytp-autonav-toggle[aria-label*="已开启" i], ' +
-      'button.ytp-autonav-toggle[aria-label*="autoplay is on" i]'
-    );
-    if (btn) {
+    // YouTube autoplay toggle: <button class="ytp-button ytp-autonav-toggle">
+    // Instead of matching every language's "on" text, we check whether the
+    // aria-label looks like it's in the OFF state.  If NOT, it must be ON
+    // and we click to disable it.
+    const OFF_RE = /\b(off|关闭|關閉|désactivé|desactivado|disattivato|desativado|ausgeschaltet|aus\b|выключен|отключен)/i;
+    const btn = document.querySelector('button.ytp-autonav-toggle');
+    if (btn && !OFF_RE.test(btn.getAttribute('aria-label') || '')) {
       btn.click();
       return true;
     }
