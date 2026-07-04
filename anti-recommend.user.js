@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.4.0
+// @version      1.4.1
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -209,7 +209,7 @@
   let _lastTreeScan = 0;
   function scanAndHideEndScreens() {
     const now = Date.now();
-    if (now - _lastTreeScan < 2000) return; // at most every 2 seconds
+    if (now - _lastTreeScan < 800) return; // every 800ms to fight inline !important
     _lastTreeScan = now;
 
     // Page-level DOM
@@ -238,6 +238,41 @@
         } catch (_) { /* ignore */ }
       }
     }
+
+    // Set up a style-observer on the player to instantly re-hide end-screen
+    // elements when YouTube sets an inline !important style to show them.
+    _ensureEndscreenStyleObserver();
+  }
+
+  let _endscreenObserverInstalled = false;
+  function _ensureEndscreenStyleObserver() {
+    if (_endscreenObserverInstalled) return;
+    const player = document.querySelector('#movie_player');
+    if (!player) return;
+    _endscreenObserverInstalled = true;
+
+    const observer = new MutationObserver(mutations => {
+      for (const m of mutations) {
+        if (m.type === 'childList') {
+          for (const node of m.addedNodes) {
+            if (node.nodeType === 1) {
+              const cls = node.className || '';
+              if (/html5-endscreen|ytp-endscreen/.test(cls)) {
+                node.style.setProperty('display', 'none', 'important');
+              }
+            }
+          }
+        } else if (m.type === 'attributes' && m.attributeName === 'style') {
+          const el = m.target;
+          const cls = el.className || '';
+          if (/html5-endscreen|ytp-endscreen/.test(cls)) {
+            el.style.setProperty('display', 'none', 'important');
+          }
+        }
+      }
+    });
+
+    observer.observe(player, { childList: true, attributes: true, subtree: true, attributeFilter: ['style'] });
   }
 
   // ── Recommendation hiding (page-level DOM only) ─────────────────────────
@@ -392,17 +427,44 @@
     return clicked;
   }
 
-  // ── Bilibili auto-advance interceptor ────────────────────────────────────
+  // ── Bilibili autoplay toggle ────────────────────────────────────────────
   //
-  // Bilibili collection/playlist auto-advance happens via page navigation
-  // (history.pushState), not via video.play().  We intercept the History API
-  // to block programmatic navigation that occurs shortly after a video ends.
-  // User-initiated clicks on "next video" are allowed through.
+  // Bilibili has an "自动开播" (auto-play) checkbox inside the player's
+  // settings menu.  The element always exists in the DOM (even when the
+  // menu is closed), so we can directly uncheck it.
+  // For collection videos there may also be a "自动连播" toggle; we target
+  // all autoplay-related switches.
+
+  function disableBilibiliAutoplayToggle() {
+    let unchecked = false;
+    const selectors = [
+      'input.bui-switch-input[aria-label*="自动开播"]',
+      'input.bui-switch-input[aria-label*="自动连播"]',
+      'input[type="checkbox"][aria-label*="自动" i]',
+      '.bpx-player-ctrl-setting-autoplay input[type="checkbox"]',
+      '.bpx-player-ctrl-setting input[type="checkbox"][aria-label*="播" i]'
+    ];
+    for (const sel of selectors) {
+      try {
+        const el = document.querySelector(sel);
+        if (el && el.checked) {
+          el.checked = false;
+          // Dispatch events so Bilibili's framework picks up the change
+          el.dispatchEvent(new Event('change', { bubbles: true }));
+          el.dispatchEvent(new Event('input', { bubbles: true }));
+          unchecked = true;
+        }
+      } catch (_) { /* ignore */ }
+    }
+    return unchecked;
+  }
+
+  // ── Bilibili history.pushState interception (backup) ────────────────────
+  // If the toggle approach above doesn't work, intercept page navigation.
 
   let _biliLastVideoEnded = 0;
   let _biliLastUserClick = 0;
 
-  // Track video element ended events
   function _hookBiliVideoEvent() {
     const video = document.querySelector('#bilibili-player video, .bpx-player-video-wrap video');
     if (!video || video.dataset.antiRecHooked) return;
@@ -412,33 +474,21 @@
     }, true);
   }
 
-  // Track user clicks to distinguish auto-advance from intentional navigation
   function _installClickTracker() {
     if (document.body.dataset.antiRecClickTracked) return;
     document.body.dataset.antiRecClickTracked = '1';
-    document.addEventListener('click', () => {
-      _biliLastUserClick = Date.now();
-    }, true);
-    // Also track keyboard navigation
-    document.addEventListener('keydown', () => {
-      _biliLastUserClick = Date.now();
-    }, true);
+    document.addEventListener('click', () => { _biliLastUserClick = Date.now(); }, true);
+    document.addEventListener('keydown', () => { _biliLastUserClick = Date.now(); }, true);
   }
 
-  // History API interception — installed once at script load time
   (function _interceptHistory() {
     const _push = history.pushState;
-    const _replace = history.replaceState;
-
     function blockIfAutoAdvance(method) {
       return function (state, title, url) {
         if (location.hostname.includes('bilibili.com') && url) {
           const sinceEnded = Date.now() - _biliLastVideoEnded;
           const sinceClick = Date.now() - _biliLastUserClick;
-          // Block if: video ended < 8s ago AND user hasn't clicked in 2.5s
-          // (A user click would mean they intentionally chose the next video)
           if (sinceEnded < 8000 && sinceClick > 2500) {
-            console.log('[AntiRecommend] Blocked auto-advance to:', url);
             _biliLastVideoEnded = 0;
             return;
           }
@@ -446,9 +496,8 @@
         return method.apply(this, arguments);
       };
     }
-
     history.pushState = blockIfAutoAdvance(_push);
-    history.replaceState = blockIfAutoAdvance(_replace);
+    history.replaceState = blockIfAutoAdvance(history.replaceState);
   })();
 
   // ── Scheduler ────────────────────────────────────────────────────────────
@@ -471,7 +520,8 @@
       if (isYT) disableYouTubeAutoplay();
       if (isBili) {
         _installClickTracker();
-        disableBilibiliAutoplay();
+        disableBilibiliAutoplayToggle();  // primary: uncheck "自动开播" checkbox
+        disableBilibiliAutoplay();        // fallback: keyword scan
         _hookBiliVideoEvent();
       }
     }
