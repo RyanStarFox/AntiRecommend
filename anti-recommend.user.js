@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.3.2
+// @version      1.3.3
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -60,6 +60,19 @@
       display: none !important;
     }
 
+    /*
+     * Info cards (.ytp-ce-element) — these are the clickable cards that pop
+     * up in the last ~20 s of a video.  Using visibility:hidden instead of
+     * display:none avoids the progress-bar freeze bug because the elements
+     * remain in layout (YouTube's JS can still measure them).
+     */
+    .html5-video-player .ytp-ce-element,
+    .html5-video-player .ytp-ce-shadow,
+    .html5-video-player .ytp-cards-teaser,
+    .html5-video-player .ytp-cards-button {
+      visibility: hidden !important;
+    }
+
     /* ===== Bilibili ===== */
 
     /* Sidebar recommendation panels */
@@ -107,7 +120,7 @@
     .ytp-endscreen-content,
     .ytp-pause-overlay,
     .ytp-pause-overlay-container,
-    /* Autoplay countdown overlay — the whole "up next" panel */
+    /* Autoplay countdown overlay */
     .ytp-autonav-endscreen-countdown-overlay,
     .ytp-autonav-endscreen-countdown-container,
     .ytp-upnext,
@@ -115,6 +128,16 @@
     .ytp-upnext-autoplay-icon,
     .ytp-upnext-cancel-button {
       display: none !important;
+    }
+    /*
+     * Info cards — visibility:hidden keeps layout intact (no JS crash),
+     * but renders cards invisible.
+     */
+    .ytp-ce-element,
+    .ytp-ce-shadow,
+    .ytp-cards-teaser,
+    .ytp-cards-button {
+      visibility: hidden !important;
     }
   `;
 
@@ -151,7 +174,8 @@
 
   // ── Periodic end-screen scanner ──────────────────────────────────────────
 
-  const ENDSCREEN_SELECTORS = [
+  // display:none  — for end-screen containers (safe because they appear post-video)
+  const HIDE_DISPLAY_SELECTORS = [
     '.html5-endscreen', '.ytp-endscreen-content',
     '.ytp-pause-overlay', '.ytp-pause-overlay-container',
     '.ytp-autonav-endscreen-countdown-overlay',
@@ -159,11 +183,24 @@
     '.ytp-upnext'
   ];
 
+  // visibility:hidden — for info cards (keep layout to avoid JS crash / progress-bar freeze)
+  const HIDE_VISIBILITY_SELECTORS = [
+    '.ytp-ce-element', '.ytp-ce-shadow',
+    '.ytp-cards-teaser', '.ytp-cards-button'
+  ];
+
   function hideEndScreensInRoot(root) {
-    for (const sel of ENDSCREEN_SELECTORS) {
+    for (const sel of HIDE_DISPLAY_SELECTORS) {
       try {
         root.querySelectorAll(sel).forEach(el => {
           el.style.setProperty('display', 'none', 'important');
+        });
+      } catch (_) { /* ignore */ }
+    }
+    for (const sel of HIDE_VISIBILITY_SELECTORS) {
+      try {
+        root.querySelectorAll(sel).forEach(el => {
+          el.style.setProperty('visibility', 'hidden', 'important');
         });
       } catch (_) { /* ignore */ }
     }
