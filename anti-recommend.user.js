@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.7
+// @version      1.5.8
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -123,6 +123,8 @@
     .right-container .ad-floor-cover,
     .right-container .slide-ad-exp,
     .bpx-player-adv-dm-wrap,
+    .left-container .activity-m-v1,
+    .activity-m-v1,
     .video-tag-container + .popular-video-container {
       display: none !important;
     }
@@ -507,6 +509,8 @@
     hideSelector('.right-container .ad-floor-cover');
     hideSelector('.right-container .slide-ad-exp');
     hideSelector('.bpx-player-adv-dm-wrap');
+    hideSelector('.left-container .activity-m-v1');
+    hideSelector('.activity-m-v1');
   }
 
   // ── Autoplay prevention ─────────────────────────────────────────────────

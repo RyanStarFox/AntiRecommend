@@ -81,9 +81,9 @@ Anti-Recommend 采用多层策略拦截推荐，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm Tampermonkey shows the latest version (currently **v1.5.7**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm Tampermonkey shows the latest version (currently **v1.5.8**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认 Tampermonkey 中脚本版本为最新（当前 **v1.5.7**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认 Tampermonkey 中脚本版本为最新（当前 **v1.5.8**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**
