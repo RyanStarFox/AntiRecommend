@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.2
+// @version      1.5.3
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -63,7 +63,24 @@
     .html5-video-player .ytp-autonav-endscreen-button-container,
     .html5-video-player .ytp-autonav-endscreen-stay-button-container,
     .html5-video-player .ytp-autonav-endscreen,
+    .html5-video-player .ytp-autonav-overlay,
     .html5-video-player .ytp-upnext {
+      display: none !important;
+    }
+
+    /*
+     * Delhi modern player — post-video recommendation grid ("更多视频").
+     * Separate from classic .html5-endscreen; shown when player is ended-mode.
+     */
+    .html5-video-player .ytp-fullscreen-grid,
+    .html5-video-player .ytp-fullscreen-grid-hover-overlay,
+    .html5-video-player .ytp-fullscreen-grid-buttons-container,
+    .html5-video-player .ytp-fullscreen-grid-main-content,
+    .html5-video-player .ytp-fullscreen-grid-stills-container,
+    .html5-video-player .ytp-modern-videowall-still,
+    .html5-video-player .ytp-videowall-still,
+    .html5-video-player .ytp-endscreen-previous,
+    .html5-video-player .ytp-endscreen-next {
       display: none !important;
     }
 
@@ -137,10 +154,21 @@
     .ytp-autonav-endscreen-button-container,
     .ytp-autonav-endscreen-stay-button-container,
     .ytp-autonav-endscreen,
+    .ytp-autonav-overlay,
     .ytp-upnext,
     .ytp-upnext-header,
     .ytp-upnext-autoplay-icon,
-    .ytp-upnext-cancel-button {
+    .ytp-upnext-cancel-button,
+    /* Delhi modern post-video grid */
+    .ytp-fullscreen-grid,
+    .ytp-fullscreen-grid-hover-overlay,
+    .ytp-fullscreen-grid-buttons-container,
+    .ytp-fullscreen-grid-main-content,
+    .ytp-fullscreen-grid-stills-container,
+    .ytp-modern-videowall-still,
+    .ytp-videowall-still,
+    .ytp-endscreen-previous,
+    .ytp-endscreen-next {
       display: none !important;
     }
     /*
@@ -181,6 +209,14 @@
   let _ytVideoHooked = false;
   let _ytVideoEndedAt = 0;
 
+  function suppressYouTubeEndGrid() {
+    const player = document.querySelector('.html5-video-player');
+    const video = document.querySelector('#movie_player video');
+    if (!player || !video?.ended) return;
+    player.classList.remove('ytp-fullscreen-grid-active');
+    player.classList.remove('ytp-grid-scrollable');
+  }
+
   function preventYouTubeReplay() {
     if (_ytVideoHooked) return;
     const video = document.querySelector('#movie_player video');
@@ -196,6 +232,7 @@
       video.pause();
       video.loop = false;
       video.removeAttribute('loop');
+      suppressYouTubeEndGrid();
     }, true);
 
     // Intercept play() to block replay after the video has finished
@@ -272,7 +309,17 @@
     '.ytp-autonav-endscreen-button-container',
     '.ytp-autonav-endscreen-stay-button-container',
     '.ytp-autonav-endscreen',
-    '.ytp-upnext'
+    '.ytp-autonav-overlay',
+    '.ytp-upnext',
+    '.ytp-fullscreen-grid',
+    '.ytp-fullscreen-grid-hover-overlay',
+    '.ytp-fullscreen-grid-buttons-container',
+    '.ytp-fullscreen-grid-main-content',
+    '.ytp-fullscreen-grid-stills-container',
+    '.ytp-modern-videowall-still',
+    '.ytp-videowall-still',
+    '.ytp-endscreen-previous',
+    '.ytp-endscreen-next'
   ];
 
   // visibility:hidden — for info cards (keep layout to avoid JS crash / progress-bar freeze)
@@ -333,6 +380,7 @@
 
     // Set up a style-observer on the player to instantly re-hide end-screen
     // elements when YouTube sets an inline !important style to show them.
+    suppressYouTubeEndGrid();
     _ensureEndscreenStyleObserver();
   }
 
@@ -343,7 +391,7 @@
     if (!player) return;
     _endscreenObserverInstalled = true;
 
-    const END_RE = /html5-endscreen|ytp-endscreen|ytp-autonav-endscreen|ytp-ce-element|ytp-cards-teaser|ytp-pause-overlay/;
+    const END_RE = /html5-endscreen|ytp-endscreen|ytp-autonav|ytp-fullscreen-grid|ytp-modern-videowall|ytp-videowall-still|ytp-ce-element|ytp-cards-teaser|ytp-pause-overlay/;
     const observer = new MutationObserver(mutations => {
       for (const m of mutations) {
         if (m.type === 'childList') {
