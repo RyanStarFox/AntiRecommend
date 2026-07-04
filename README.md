@@ -1,4 +1,6 @@
-# Anti-Recommend
+<p align="center">
+  <img src="media/logo_text.png" alt="AntiRecommend" width="420" />
+</p>
 
 > Hide video recommendations and disable autoplay on **YouTube** and **Bilibili** — stay focused on what you came to watch.
 >
