@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.4.3
+// @version      1.4.4
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -380,35 +380,20 @@
   const AUTOPLAY_RE = /autoplay|自动播放|自动连播|auto.play|auto_play/i;
 
   function disableYouTubeAutoplay() {
-    let clicked = false;
-
-    // Page + shadow DOM search
-    const roots = [document];
-    for (const id of ['#movie_player', '#player']) {
-      const host = document.querySelector(id);
-      if (host && host.shadowRoot) roots.push(host.shadowRoot);
+    // The YouTube autoplay toggle is a <button> inside #movie_player:
+    //   <button class="ytp-button ytp-autonav-toggle"
+    //           aria-label="自动播放模式已开启">
+    // When ON, aria-label contains "已开启".  Click it to turn OFF.
+    // The button is in the page DOM (no shadow root involved).
+    const btn = document.querySelector(
+      'button.ytp-autonav-toggle[aria-label*="已开启" i], ' +
+      'button.ytp-autonav-toggle[aria-label*="autoplay is on" i]'
+    );
+    if (btn) {
+      btn.click();
+      return true;
     }
-    const ytd = document.querySelector('ytd-player');
-    if (ytd && ytd.shadowRoot) {
-      roots.push(ytd.shadowRoot);
-      for (const sel of ['#movie_player', '#player', '.html5-video-player']) {
-        try {
-          const inner = ytd.shadowRoot.querySelector(sel);
-          if (inner && inner.shadowRoot) roots.push(inner.shadowRoot);
-        } catch (_) { /* ignore */ }
-      }
-    }
-
-    for (const root of roots) {
-      try {
-        clicked = scanAndDisable(
-          root.querySelectorAll('.ytp-autonav-toggle-button, button, tp-yt-paper-toggle-button'),
-          AUTOPLAY_RE
-        ) || clicked;
-      } catch (_) { /* ignore */ }
-    }
-
-    return clicked;
+    return false;
   }
 
   const BILI_AUTOPLAY_RE = /autoplay|自动播放|连播|auto.play|playmode|play_mode|order/i;
