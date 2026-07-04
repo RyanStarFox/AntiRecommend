@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.3
+// @version      1.5.4
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -391,32 +391,71 @@
     if (!player) return;
     _endscreenObserverInstalled = true;
 
-    const END_RE = /html5-endscreen|ytp-endscreen|ytp-autonav|ytp-fullscreen-grid|ytp-modern-videowall|ytp-videowall-still|ytp-ce-element|ytp-cards-teaser|ytp-pause-overlay/;
+    const DISPLAY_HIDE_CLASSES = new Set([
+      'html5-endscreen',
+      'ytp-endscreen-content',
+      'ytp-autonav-endscreen-countdown-overlay',
+      'ytp-autonav-endscreen-countdown-container',
+      'ytp-autonav-endscreen-overlay',
+      'ytp-autonav-endscreen-upnext-container',
+      'ytp-autonav-endscreen-upnext-alternative-header',
+      'ytp-autonav-endscreen-video-info',
+      'ytp-autonav-endscreen-button-container',
+      'ytp-autonav-endscreen-stay-button-container',
+      'ytp-autonav-overlay',
+      'ytp-upnext',
+      'ytp-fullscreen-grid',
+      'ytp-fullscreen-grid-hover-overlay',
+      'ytp-fullscreen-grid-buttons-container',
+      'ytp-fullscreen-grid-main-content',
+      'ytp-fullscreen-grid-stills-container',
+      'ytp-modern-videowall-still',
+      'ytp-videowall-still',
+      'ytp-endscreen-previous',
+      'ytp-endscreen-next'
+    ]);
+    const VISIBILITY_HIDE_CLASSES = new Set([
+      'ytp-ce-element',
+      'ytp-ce-shadow',
+      'ytp-cards-teaser',
+      'ytp-cards-button'
+    ]);
+
+    function applyEndscreenHide(el) {
+      if (!el?.classList) return;
+      // Never hide the player root. It can contain state classes such as
+      // ytp-autonav-endscreen-cancelled-state during normal playback.
+      if (el.classList.contains('html5-video-player')) return;
+
+      for (const cls of DISPLAY_HIDE_CLASSES) {
+        if (el.classList.contains(cls)) {
+          el.style.setProperty('display', 'none', 'important');
+          return;
+        }
+      }
+      for (const cls of VISIBILITY_HIDE_CLASSES) {
+        if (el.classList.contains(cls)) {
+          el.style.setProperty('visibility', 'hidden', 'important');
+          return;
+        }
+      }
+    }
+
     const observer = new MutationObserver(mutations => {
       for (const m of mutations) {
         if (m.type === 'childList') {
           for (const node of m.addedNodes) {
             if (node.nodeType !== 1) continue;
-            const cls = node.className || '';
-            if (END_RE.test(cls)) {
-              node.style.setProperty('display', 'none', 'important');
-            }
+            applyEndscreenHide(node);
             // Also check children of added nodes
             try {
               node.querySelectorAll?.('*').forEach(child => {
-                const cCls = child.className || '';
-                if (END_RE.test(cCls)) {
-                  child.style.setProperty('display', 'none', 'important');
-                }
+                applyEndscreenHide(child);
               });
             } catch (_) { /* ignore */ }
           }
         } else if (m.type === 'attributes') {
-          const el = m.target;
-          const cls = (typeof el.className === 'string') ? el.className : '';
-          if (END_RE.test(cls)) {
-            el.style.setProperty('display', 'none', 'important');
-          }
+          applyEndscreenHide(m.target);
         }
       }
     });
