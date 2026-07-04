@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.4.1
+// @version      1.4.2
 // @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
 // @author       shao
 // @match        https://www.youtube.com/*
@@ -73,6 +73,15 @@
       visibility: hidden !important;
     }
 
+    /*
+     * Replay overlay — the large play/replay button that appears after a
+     * video ends.  Only target it in ended-mode so normal pause state
+     * isn't affected.
+     */
+    .ended-mode .ytp-large-play-button {
+      visibility: hidden !important;
+    }
+
     /* ===== Bilibili ===== */
 
     /* Sidebar recommendation panels */
@@ -139,6 +148,10 @@
     .ytp-cards-button {
       visibility: hidden !important;
     }
+    /* Replay button in ended-mode */
+    .ended-mode .ytp-large-play-button {
+      visibility: hidden !important;
+    }
   `;
 
   const SHADOW_STYLE_ID = 'anti-recommend-shadow-style';
@@ -186,7 +199,8 @@
   // visibility:hidden — for info cards (keep layout to avoid JS crash / progress-bar freeze)
   const HIDE_VISIBILITY_SELECTORS = [
     '.ytp-ce-element', '.ytp-ce-shadow',
-    '.ytp-cards-teaser', '.ytp-cards-button'
+    '.ytp-cards-teaser', '.ytp-cards-button',
+    '.ended-mode .ytp-large-play-button'
   ];
 
   function hideEndScreensInRoot(root) {
@@ -437,25 +451,30 @@
 
   function disableBilibiliAutoplayToggle() {
     let unchecked = false;
-    const selectors = [
-      'input.bui-switch-input[aria-label*="自动开播"]',
-      'input.bui-switch-input[aria-label*="自动连播"]',
-      'input[type="checkbox"][aria-label*="自动" i]',
-      '.bpx-player-ctrl-setting-autoplay input[type="checkbox"]',
-      '.bpx-player-ctrl-setting input[type="checkbox"][aria-label*="播" i]'
-    ];
-    for (const sel of selectors) {
-      try {
-        const el = document.querySelector(sel);
-        if (el && el.checked) {
-          el.checked = false;
-          // Dispatch events so Bilibili's framework picks up the change
-          el.dispatchEvent(new Event('change', { bubbles: true }));
-          el.dispatchEvent(new Event('input', { bubbles: true }));
-          unchecked = true;
-        }
-      } catch (_) { /* ignore */ }
+
+    // 1) "自动开播" checkbox inside the player settings menu
+    const settingsCheckbox = document.querySelector(
+      'input.bui-switch-input[aria-label*="自动开播"]'
+    );
+    if (settingsCheckbox && settingsCheckbox.checked) {
+      settingsCheckbox.checked = false;
+      settingsCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+      settingsCheckbox.dispatchEvent(new Event('input', { bubbles: true }));
+      unchecked = true;
     }
+
+    // 2) "自动连播" toggle in the right-side playlist/collection panel
+    //    Structure: .auto-play > .continuous-btn > .switch-btn.on
+    const switchBtn = document.querySelector('.auto-play .switch-btn.on');
+    if (switchBtn) {
+      // Click the parent .continuous-btn to toggle it off
+      const btn = switchBtn.closest('.continuous-btn');
+      if (btn) {
+        btn.click();
+        unchecked = true;
+      }
+    }
+
     return unchecked;
   }
 
