@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations — YouTube Bilibili unhook & clean
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.11
+// @version      1.5.12
 // @description  Remove sidebar/end-screen recommendations, disable autoplay, and redirect blocked search URLs on YouTube and Bilibili
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
 // @match        https://search.bilibili.com/*
+// @match        https://www.bilibili.com/*
 // @match        https://www.bilibili.com/video/*
 // @match        https://www.bilibili.com/bangumi/*
 // @run-at       document-start
@@ -34,6 +35,11 @@
 
   function maybeRedirectAwayFromSuperSearch() {
     const { hostname, href, pathname, search } = location;
+
+    if (hostname === 'www.bilibili.com' && (pathname === '/' || pathname === '')) {
+      location.replace('https://search.bilibili.com/all');
+      return true;
+    }
 
     if (hostname === 'search.bilibili.com' && pathname.startsWith('/all')) {
       const keyword = new URLSearchParams(search).get('keyword') || '';
@@ -792,6 +798,8 @@
     const host = location.hostname;
     const isYT = host.includes('youtube.com');
     const isBili = host.includes('bilibili.com');
+
+    if (isBili && maybeRedirectAwayFromSuperSearch()) return;
 
     // End-screen scan (own throttle)
     if (isYT) {
