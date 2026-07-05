@@ -1,11 +1,12 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations — YouTube Bilibili unhook & clean
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.10
-// @description  Remove sidebar/end-screen recommendations & disable autoplay on YouTube and Bilibili
+// @version      1.5.11
+// @description  Remove sidebar/end-screen recommendations, disable autoplay, and redirect blocked search URLs on YouTube and Bilibili
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
+// @match        https://search.bilibili.com/*
 // @match        https://www.bilibili.com/video/*
 // @match        https://www.bilibili.com/bangumi/*
 // @run-at       document-start
@@ -15,6 +16,51 @@
 
 (function () {
   'use strict';
+
+  // ── Blocked "super search" redirects ─────────────────────────────────────
+  // Bilibili garbled keyword bytes (UTF-8 misread) + correct Chinese forms.
+  const BLOCKED_SEARCH_RE = /^(?:%E7%93%92%E5%91%AF%E9%AA%87%E9%8E%BC%E6%BB%85%E5%82%A8|瓒呯骇鎼滅储|超级搜索|超級搜索)$/i;
+
+  function isBlockedSearchQuery(value) {
+    if (!value) return false;
+    const raw = value.trim();
+    if (BLOCKED_SEARCH_RE.test(raw)) return true;
+    try {
+      return BLOCKED_SEARCH_RE.test(decodeURIComponent(raw.replace(/\+/g, ' ')).trim());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function maybeRedirectAwayFromSuperSearch() {
+    const { hostname, href, pathname, search } = location;
+
+    if (hostname === 'search.bilibili.com' && pathname.startsWith('/all')) {
+      const keyword = new URLSearchParams(search).get('keyword') || '';
+      if (isBlockedSearchQuery(keyword)) {
+        location.replace('https://search.bilibili.com/all');
+        return true;
+      }
+    }
+
+    if (hostname === 'www.youtube.com') {
+      if (/^https:\/\/www\.youtube\.com\/?$/.test(href)) {
+        location.replace('https://www.youtube.com/feed/playlists');
+        return true;
+      }
+      if (pathname === '/results') {
+        const query = new URLSearchParams(search).get('search_query') || '';
+        if (isBlockedSearchQuery(query)) {
+          location.replace('https://www.youtube.com/feed/playlists');
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  if (maybeRedirectAwayFromSuperSearch()) return;
 
   // ── Page-level CSS injection ────────────────────────────────────────────
 
@@ -749,6 +795,7 @@
 
     // End-screen scan (own throttle)
     if (isYT) {
+      if (maybeRedirectAwayFromSuperSearch()) return;
       scanAndHideEndScreens();
       preventYouTubeReplay();
       hideYouTubeAds();
@@ -791,8 +838,10 @@
 
     const host = location.hostname;
     if (host.includes('youtube.com')) {
+      if (maybeRedirectAwayFromSuperSearch()) return;
       hideYouTubeRecommendations();
     } else if (host.includes('bilibili.com')) {
+      if (maybeRedirectAwayFromSuperSearch()) return;
       hideBilibiliRecommendations();
     }
   }
