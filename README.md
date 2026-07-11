@@ -122,13 +122,13 @@ Once installed, the script runs automatically on matching pages — no extra set
 
 4. **验证效果 / Verify it works**
    - **YouTube**：首页跳转到播放列表；侧边栏推荐消失；视频结束后不再弹出推荐网格；可跳过广告时会自动点击
-   - **Bilibili**：首页跳转到搜索页；右侧推荐与推广卡片消失；简介下方活动条与页面广告被隐藏；自动连播会被关闭
+   - **Bilibili**：首页跳转到搜索页；右侧推荐与推广卡片消失；简介下方活动条与页面广告被隐藏；“自动开播”“自动连播”会被关闭，播放方式设为“播完暂停”
 
 5. **更新脚本 / Update the script**
    - Tampermonkey 默认会自动检查更新；也可在 Dashboard 中手动点击 **Check for userscript updates**
    - Userscripts 需重新导入新版本，或通过 iCloud 同步更新
 
-> 当前最新版本 / Latest version: **v1.5.12**
+> 当前最新版本 / Latest version: **v1.5.13**
 
 ---
 
@@ -163,9 +163,9 @@ Anti-Recommend 采用多层策略清理页面，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.5.12**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.5.13**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.5.12**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.5.13**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**

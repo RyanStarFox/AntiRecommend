@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations — YouTube Bilibili unhook & clean
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.12
+// @version      1.5.13
 // @description  Remove sidebar/end-screen recommendations, disable autoplay, and redirect blocked search URLs on YouTube and Bilibili
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -754,22 +754,34 @@
       'input.bui-switch-input[aria-label*="自动开播"]'
     );
     if (settingsCheckbox && settingsCheckbox.checked) {
-      settingsCheckbox.checked = false;
-      settingsCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
-      settingsCheckbox.dispatchEvent(new Event('input', { bubbles: true }));
+      // A real click updates the player store; assigning .checked only changes
+      // the DOM property and Bilibili may immediately restore it.
+      settingsCheckbox.click();
       unchecked = true;
     }
 
-    // 2) "自动连播" toggle in the right-side playlist/collection panel
-    //    Structure: .auto-play > .continuous-btn > .switch-btn.on
-    const switchBtn = document.querySelector('.auto-play .switch-btn.on');
+    // 2) "自动连播" toggle in the right-side recommendation/playlist panel.
+    //    Current structure is .continuous-btn > .switch-btn.on; retain the
+    //    older .auto-play ancestor variant for compatibility.
+    const switchBtn = document.querySelector(
+      '.continuous-btn .switch-btn.on, .auto-play .switch-btn.on'
+    );
     if (switchBtn) {
-      // Click the parent .continuous-btn to toggle it off
       const btn = switchBtn.closest('.continuous-btn');
       if (btn) {
         btn.click();
         unchecked = true;
       }
+    }
+
+    // 3) Player setting "播放方式": force "播完暂停" instead of "自动切集".
+    //    This is a separate state from the right-side autoplay switch.
+    const pauseAfterPlaying = document.querySelector(
+      '.bpx-player-ctrl-setting-handoff-content input.bui-radio-input[value="2"]'
+    );
+    if (pauseAfterPlaying && !pauseAfterPlaying.checked) {
+      pauseAfterPlaying.click();
+      unchecked = true;
     }
 
     return unchecked;
