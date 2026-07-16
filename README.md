@@ -2,9 +2,13 @@
   <img src="media/logo_text.png" alt="AntiRecommend" width="420" />
 </p>
 
-> Hide recommendations, block ads, disable autoplay, and redirect distracting entry pages on **YouTube** and **Bilibili**.
+> Hide recommendations, disable autoplay, and redirect distracting entry pages on **YouTube** and **Bilibili**.
 >
-> 隐藏 **YouTube** 和 **Bilibili** 的推荐与广告，关闭自动连播，并重定向干扰性入口页面。
+> 隐藏 **YouTube** 和 **Bilibili** 的推荐，关闭自动连播，并重定向干扰性入口页面。
+
+> **Ad blocking** has moved to the companion script **[AntiAds](https://github.com/RyanStarFox/AntiAds)**. Install both for the full experience.
+>
+> **去广告功能**已拆分到配套脚本 **[AntiAds](https://github.com/RyanStarFox/AntiAds)**，可同时安装两者获得完整体验。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![LINUX DO](https://img.shields.io/badge/LINUX-DO-FFB003.svg?logo=data:image/svg%2bxml;base64,DQo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiPjxwYXRoIGQ9Ik00Ni44Mi0uMDU1aDYuMjVxMjMuOTY5IDIuMDYyIDM4IDIxLjQyNmM1LjI1OCA3LjY3NiA4LjIxNSAxNi4xNTYgOC44NzUgMjUuNDV2Ni4yNXEtMi4wNjQgMjMuOTY4LTIxLjQzIDM4LTExLjUxMiA3Ljg4NS0yNS40NDUgOC44NzRoLTYuMjVxLTIzLjk3LTIuMDY0LTM4LjAwNC0yMS40M1EuOTcxIDY3LjA1Ni0uMDU0IDUzLjE4di02LjQ3M0MxLjM2MiAzMC43ODEgOC41MDMgMTguMTQ4IDIxLjM3IDguODE3IDI5LjA0NyAzLjU2MiAzNy41MjcuNjA0IDQ2LjgyMS0uMDU2IiBzdHlsZT0ic3Ryb2tlOm5vbmU7ZmlsbC1ydWxlOmV2ZW5vZGQ7ZmlsbDojZWNlY2VjO2ZpbGwtb3BhY2l0eToxIi8+PHBhdGggZD0iTTQ3LjI2NiAyLjk1N3EyMi41My0uNjUgMzcuNzc3IDE1LjczOGE0OS43IDQ5LjcgMCAwIDEgNi44NjcgMTAuMTU3cS00MS45NjQuMjIyLTgzLjkzIDAgOS43NS0xOC42MTYgMzAuMDI0LTI0LjM4N2E2MSA2MSAwIDAgMSA5LjI2Mi0xLjUwOCIgc3R5bGU9InN0cm9rZTpub25lO2ZpbGwtcnVsZTpldmVub2RkO2ZpbGw6IzE5MTkxOTtmaWxsLW9wYWNpdHk6MSIvPjxwYXRoIGQ9Ik03Ljk4IDcwLjkyNmMyNy45NzctLjAzNSA1NS45NTQgMCA4My45My4xMTNRODMuNDI2IDg3LjQ3MyA2Ni4xMyA5NC4wODZxLTE4LjgxIDYuNTQ0LTM2LjgzMi0xLjg5OC0xNC4yMDMtNy4wOS0yMS4zMTctMjEuMjYyIiBzdHlsZT0ic3Ryb2tlOm5vbmU7ZmlsbC1ydWxlOmV2ZW5vZGQ7ZmlsbDojZjlhZjAwO2ZpbGwtb3BhY2l0eToxIi8+PC9zdmc+)](https://linux.do)
 
@@ -16,8 +20,6 @@
 |---|---|---|
 | 🚫 | Hide sidebar recommendations | 隐藏侧边栏推荐 |
 | 🎬 | Hide in-player end-screen recommendations | 隐藏播放器内结束页推荐 |
-| 🧹 | Hide page ads and promoted cards (Bilibili) | 隐藏 Bilibili 页面广告与推广卡片 |
-| ⏭️ | Hide YouTube ad UI and auto-click skip buttons | 隐藏 YouTube 广告 UI 并自动点击跳过 |
 | ⏸️ | Hide pause overlay suggestions (YouTube) | 隐藏暂停时的推荐浮层（YouTube） |
 | 🔁 | Disable autoplay / auto-advance | 关闭自动播放 / 自动连播 |
 | 🔀 | Redirect distracting homepage & search URLs | 重定向干扰性首页与搜索 URL |
@@ -28,11 +30,11 @@
 
 ## Supported Sites / 支持站点
 
-| Site / 站点 | Pages / 页面 | Sidebar / 侧边栏 | End Screen / 结束页 | Ads / 广告 | Autoplay / 自动连播 | Redirects / 重定向 |
-|---|---|---|---|---|---|---|
-| YouTube (Desktop) | 首页、搜索、视频页 | ✅ | ✅ | ✅ | ✅ | ✅ |
-| YouTube (Mobile) | 视频页 | ✅ | ✅ | — | ✅ | — |
-| Bilibili | 首页、搜索、视频、番剧 | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Site / 站点 | Pages / 页面 | Sidebar / 侧边栏 | End Screen / 结束页 | Autoplay / 自动连播 | Redirects / 重定向 |
+|---|---|---|---|---|---|
+| YouTube (Desktop) | 首页、搜索、视频页 | ✅ | ✅ | ✅ | ✅ |
+| YouTube (Mobile) | 视频页 | ✅ | ✅ | ✅ | — |
+| Bilibili | 首页、搜索、视频、番剧 | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
@@ -121,14 +123,14 @@ Once installed, the script runs automatically on matching pages — no extra set
    - After installing or updating, do a hard refresh to load the latest script
 
 4. **验证效果 / Verify it works**
-   - **YouTube**：首页跳转到播放列表；侧边栏推荐消失；视频结束后不再弹出推荐网格；可跳过广告时会自动点击
-   - **Bilibili**：首页跳转到搜索页；右侧推荐与推广卡片消失；简介下方活动条与页面广告被隐藏；“自动开播”“自动连播”会被关闭，播放方式设为“播完暂停”
+   - **YouTube**：首页跳转到播放列表；侧边栏推荐消失；视频结束后不再弹出推荐网格
+   - **Bilibili**：首页跳转到搜索页；右侧推荐消失；“自动开播”“自动连播”会被关闭，播放方式设为“播完暂停”
 
 5. **更新脚本 / Update the script**
    - Tampermonkey 默认会自动检查更新；也可在 Dashboard 中手动点击 **Check for userscript updates**
    - Userscripts 需重新导入新版本，或通过 iCloud 同步更新
 
-> 当前最新版本 / Latest version: **v1.5.13**
+> 当前最新版本 / Latest version: **v1.6.0**
 
 ---
 
@@ -163,25 +165,25 @@ Anti-Recommend 采用多层策略清理页面，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.5.13**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.6.0**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.5.13**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.6.0**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**
 
-No. The script only targets recommendation and ad containers, not the player itself.
+No. The script only targets recommendation containers, not the player itself.
 If you encounter issues, please open an [Issue](https://github.com/RyanStarFox/AntiRecommend/issues).
 
-不会。脚本只针对推荐和广告相关容器，不会隐藏播放器本体。
+不会。脚本只针对推荐相关容器，不会隐藏播放器本体。
 如遇异常，请在 [Issues](https://github.com/RyanStarFox/AntiRecommend/issues) 反馈。
 
-**Q: Can it skip all YouTube video ads?**
-**问：能跳过所有 YouTube 视频广告吗？**
+**Q: Where did ad blocking go?**
+**问：去广告功能去哪了？**
 
-The script uses a conservative approach: it hides ad UI and auto-clicks the official **Skip Ad** button when available. Non-skippable ads cannot be bypassed without riskier techniques that may break playback.
+Ad blocking was split into **[AntiAds](https://github.com/RyanStarFox/AntiAds)** in v1.6.0. Install it alongside AntiRecommend for the same ad-hiding behavior as before.
 
-采用保守策略：隐藏广告 UI 并在出现官方「跳过广告」按钮时自动点击。不可跳过的广告无法用低风险方式绕过，激进方案可能导致播放异常。
+v1.6.0 起去广告功能已拆分到 **[AntiAds](https://github.com/RyanStarFox/AntiAds)**，与 AntiRecommend 同时安装即可恢复原有去广告效果。
 
 **Q: Homepage redirects don't work?**
 **问：首页重定向不生效？**

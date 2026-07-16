@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations — YouTube Bilibili unhook & clean
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.5.13
-// @description  Remove sidebar/end-screen recommendations, disable autoplay, and redirect blocked search URLs on YouTube and Bilibili
+// @version      1.6.0
+// @description  Remove sidebar/end-screen recommendations, disable autoplay, and redirect blocked search URLs on YouTube and Bilibili (ad blocking moved to AntiAds)
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -149,30 +149,6 @@
       visibility: hidden !important;
     }
 
-    /* Page ads and in-player overlay ads. Do not hide skip buttons. */
-    ytd-ad-slot-renderer,
-    ytd-display-ad-renderer,
-    ytd-promoted-sparkles-web-renderer,
-    ytd-promoted-video-renderer,
-    ytd-in-feed-ad-layout-renderer,
-    ytd-rich-item-renderer:has(ytd-ad-slot-renderer),
-    ytd-rich-item-renderer:has(ytd-display-ad-renderer),
-    ytd-rich-item-renderer:has(ytd-promoted-sparkles-web-renderer),
-    ytd-compact-promoted-video-renderer,
-    ytd-action-companion-ad-renderer,
-    ytd-companion-slot-renderer,
-    ytd-player-legacy-desktop-watch-ads-renderer,
-    .ytd-ad-slot-renderer,
-    .ytp-ad-overlay-container,
-    .ytp-ad-overlay-slot,
-    .ytp-ad-player-overlay,
-    .ytp-ad-text-overlay,
-    .ytp-ad-image-overlay,
-    .ytp-ad-action-interstitial,
-    .ytp-ad-survey {
-      display: none !important;
-    }
-
     /* ===== Bilibili ===== */
 
     /* Sidebar recommendation panels */
@@ -190,17 +166,6 @@
     #popular-video,
     .right-container .video-page-special,
     .right-container .pop-video,
-    .right-container .video-card-ad-small,
-    .video-card-ad-small,
-    .right-container .ad-report,
-    .right-container .ad-report-inner,
-    .right-container .right-bottom-banner,
-    .right-container .ad-floor-exp,
-    .right-container .ad-floor-cover,
-    .right-container .slide-ad-exp,
-    .bpx-player-adv-dm-wrap,
-    .left-container .activity-m-v1,
-    .activity-m-v1,
     .video-tag-container + .popular-video-container {
       display: none !important;
     }
@@ -556,48 +521,6 @@
   function hideYouTubeRecommendations() {
     hideSelector('ytd-watch-next-secondary-results-renderer');
     hideSelector('ytm-item-section-renderer#related');
-    hideYouTubeAds();
-  }
-
-  function hideYouTubeAds() {
-    hideSelector('ytd-ad-slot-renderer');
-    hideSelector('ytd-display-ad-renderer');
-    hideSelector('ytd-promoted-sparkles-web-renderer');
-    hideSelector('ytd-promoted-video-renderer');
-    hideSelector('ytd-in-feed-ad-layout-renderer');
-    hideSelector('ytd-compact-promoted-video-renderer');
-    hideSelector('ytd-action-companion-ad-renderer');
-    hideSelector('ytd-companion-slot-renderer');
-    hideSelector('ytd-player-legacy-desktop-watch-ads-renderer');
-    hideSelector('.ytp-ad-overlay-container');
-    hideSelector('.ytp-ad-overlay-slot');
-    hideSelector('.ytp-ad-player-overlay');
-    hideSelector('.ytp-ad-text-overlay');
-    hideSelector('.ytp-ad-image-overlay');
-    hideSelector('.ytp-ad-action-interstitial');
-    hideSelector('.ytp-ad-survey');
-  }
-
-  function clickYouTubeAdControls() {
-    const selectors = [
-      'button.ytp-ad-skip-button',
-      'button.ytp-ad-skip-button-modern',
-      'button.ytp-skip-ad-button',
-      '.ytp-ad-skip-button',
-      '.ytp-ad-skip-button-modern',
-      '.ytp-skip-ad-button',
-      'button.ytp-ad-overlay-close-button',
-      '.ytp-ad-overlay-close-button',
-      '.ytp-ad-close-button',
-      '.ytp-ad-close-button-modern'
-    ];
-    for (const sel of selectors) {
-      try {
-        document.querySelectorAll(sel).forEach(el => {
-          if (!el.disabled) el.click();
-        });
-      } catch (_) { /* ignore */ }
-    }
   }
 
   function hideBilibiliRecommendations() {
@@ -618,17 +541,6 @@
     hideSelector('.popular-video-container');
     hideSelector('#popular-video');
     hideSelector('.right-container .pop-video');
-    hideSelector('.right-container .video-card-ad-small');
-    hideSelector('.video-card-ad-small');
-    hideSelector('.right-container .ad-report');
-    hideSelector('.right-container .ad-report-inner');
-    hideSelector('.right-container .right-bottom-banner');
-    hideSelector('.right-container .ad-floor-exp');
-    hideSelector('.right-container .ad-floor-cover');
-    hideSelector('.right-container .slide-ad-exp');
-    hideSelector('.bpx-player-adv-dm-wrap');
-    hideSelector('.left-container .activity-m-v1');
-    hideSelector('.activity-m-v1');
   }
 
   // ── Autoplay prevention ─────────────────────────────────────────────────
@@ -818,8 +730,6 @@
       if (maybeRedirectAwayFromSuperSearch()) return;
       scanAndHideEndScreens();
       preventYouTubeReplay();
-      hideYouTubeAds();
-      clickYouTubeAdControls();
     }
 
     // Autoplay toggle
