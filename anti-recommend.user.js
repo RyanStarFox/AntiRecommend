@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations — YouTube Bilibili unhook & clean
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.6.0
+// @version      1.6.1
 // @description  Remove sidebar/end-screen recommendations, disable autoplay, and redirect blocked search URLs on YouTube and Bilibili (ad blocking moved to AntiAds)
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -19,8 +19,10 @@
   'use strict';
 
   // ── Blocked "super search" redirects ─────────────────────────────────────
-  // Bilibili garbled keyword bytes (UTF-8 misread) + correct Chinese forms.
-  const BLOCKED_SEARCH_RE = /^(?:%E7%93%92%E5%91%AF%E9%AA%87%E9%8E%BC%E6%BB%85%E5%82%A8|瓒呯骇鎼滅储|超级搜索|超級搜索)$/i;
+  // Correct Chinese + common mojibake forms:
+  // - GBK misread of UTF-8 (Bilibili): 瓒呯骇鎼滅储
+  // - Shift-JIS / CP932 misread of UTF-8 (YouTube): 雜�ｺｧ謳懃ｴ｢ / 雜�郤ｧ謳懃ｴ｢
+  const BLOCKED_SEARCH_RE = /^(?:%E7%93%92%E5%91%AF%E9%AA%87%E9%8E%BC%E6%BB%85%E5%82%A8|瓒呯骇鎼滅储|%E9%9B%9C%EF%BF%BD%EF%BD%BA%EF%BD%A7%E8%AC%B3%E6%87%83%EF%BD%B4%EF%BD%A2|雜\uFFFDｺｧ謳懃ｴ｢|%E9%9B%9C%EF%BF%BD%E9%83%A4%EF%BD%A7%E8%AC%B3%E6%87%83%EF%BD%B4%EF%BD%A2|雜\uFFFD郤ｧ謳懃ｴ｢|超级搜索|超級搜索)$/i;
 
   function isBlockedSearchQuery(value) {
     if (!value) return false;
