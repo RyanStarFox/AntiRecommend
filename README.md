@@ -2,9 +2,9 @@
   <img src="media/logo_text.png" alt="AntiRecommend" width="420" />
 </p>
 
-> Hide recommendations, disable autoplay, and redirect distracting entry pages on **YouTube** and **Bilibili**.
+> Hide recommendations, disable autoplay, and redirect distracting entry pages on **YouTube**, **Bilibili**, and **Zhihu**.
 >
-> 隐藏 **YouTube** 和 **Bilibili** 的推荐，关闭自动连播，并重定向干扰性入口页面。
+> 隐藏 **YouTube**、**Bilibili**、**知乎** 的推荐与热点，关闭自动连播，并重定向干扰性入口页面。
 
 > **Ad blocking** has moved to the companion script **[AntiAds](https://github.com/RyanStarFox/AntiAds)**. Install both for the full experience.
 >
@@ -21,6 +21,8 @@
 | 🚫 | Hide sidebar recommendations | 隐藏侧边栏推荐 |
 | 🎬 | Hide in-player end-screen recommendations | 隐藏播放器内结束页推荐 |
 | ⏸️ | Hide pause overlay suggestions (YouTube) | 隐藏暂停时的推荐浮层（YouTube） |
+| 🔥 | Hide Zhihu hot search / topic tags / 推荐阅读 | 隐藏知乎热搜、话题 Tag、推荐阅读 |
+| 🧭 | Clean Zhihu Zhida discovery widgets | 清理知乎直达推荐知识库与建议问题 |
 | 🔁 | Disable autoplay / auto-advance | 关闭自动播放 / 自动连播 |
 | 🔀 | Redirect distracting homepage & search URLs | 重定向干扰性首页与搜索 URL |
 | ⚡ | Inject CSS at `document-start` — no flicker | 在页面加载前注入 CSS，无闪烁 |
@@ -35,6 +37,7 @@
 | YouTube (Desktop) | 首页、搜索、视频页 | ✅ | ✅ | ✅ | ✅ |
 | YouTube (Mobile) | 视频页 | ✅ | ✅ | ✅ | — |
 | Bilibili | 首页、搜索、视频、番剧 | ✅ | ✅ | ✅ | ✅ |
+| Zhihu / 知乎 | 首页、搜索、专栏、直达 | ✅ | — | — | ✅ |
 
 ---
 
@@ -49,6 +52,8 @@
 | `https://www.bilibili.com/` | `https://search.bilibili.com/all` |
 | `https://www.bilibili.com/index.html` | `https://search.bilibili.com/all` |
 | Bilibili 搜索「超级搜索」（含乱码变体） | `https://search.bilibili.com/all` |
+| `https://www.zhihu.com/`（推荐首页） | `https://zhida.zhihu.com` |
+| `https://www.zhihu.com/hot`（热榜） | `https://zhida.zhihu.com` |
 
 > 重定向在 `document-start` 执行，并持续监听 SPA 内导航（如 YouTube 站内搜索）。
 >
@@ -101,7 +106,7 @@ git clone https://github.com/RyanStarFox/AntiRecommend.git
 1. 打开 Userscripts App → **Settings / 设置** → 启用 Safari 扩展
 2. 在 Safari 中打开 **Settings → Extensions → Userscripts**，允许在目标网站运行
 3. 将 `anti-recommend.user.js` 导入 Userscripts（可通过 iCloud 同步或本地文件导入）
-4. 在 Userscripts 中为 `youtube.com` 和 `bilibili.com` 启用该脚本
+4. 在 Userscripts 中为 `youtube.com`、`bilibili.com`、`zhihu.com` 启用该脚本
 
 ---
 
@@ -114,6 +119,7 @@ Once installed, the script runs automatically on matching pages — no extra set
 1. **打开目标网站 / Open a supported site**
    - YouTube：`https://www.youtube.com`
    - Bilibili：`https://www.bilibili.com`
+   - Zhihu：`https://www.zhihu.com` / `https://zhida.zhihu.com`
 
 2. **确认脚本已启用 / Confirm the script is active**
    - Tampermonkey：点击扩展图标，确认脚本为 **Enabled / 已启用**
@@ -126,12 +132,13 @@ Once installed, the script runs automatically on matching pages — no extra set
 4. **验证效果 / Verify it works**
    - **YouTube**：首页跳转到播放列表；侧边栏推荐消失；视频结束后不再弹出推荐网格
    - **Bilibili**：首页跳转到搜索页；右侧推荐消失；“自动开播”“自动连播”会被关闭，播放方式设为“播完暂停”
+   - **Zhihu**：首页/热榜跳转到直达；隐藏「大家都在搜」、话题 Tag、「推荐阅读」；直达页隐藏推荐知识库与建议问题
 
 5. **更新脚本 / Update the script**
    - Tampermonkey 默认会自动检查更新；也可在 Dashboard 中手动点击 **Check for userscript updates**
    - Userscripts 需重新导入新版本，或通过 iCloud 同步更新
 
-> 当前最新版本 / Latest version: **v1.6.2**
+> 当前最新版本 / Latest version: **v1.7.0**
 
 ---
 
@@ -166,9 +173,9 @@ Anti-Recommend 采用多层策略清理页面，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.6.2**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.7.0**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.6.2**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.7.0**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**
@@ -189,9 +196,9 @@ v1.6.0 起去广告功能已拆分到 **[AntiAds](https://github.com/RyanStarFox
 **Q: Homepage redirects don't work?**
 **问：首页重定向不生效？**
 
-Make sure the script is enabled for the site (e.g. `www.bilibili.com`, `www.youtube.com`) and hard-refresh. Tampermonkey must have permission to run on those domains.
+Make sure the script is enabled for the site (e.g. `www.bilibili.com`, `www.youtube.com`, `www.zhihu.com`, `zhida.zhihu.com`) and hard-refresh. Tampermonkey must have permission to run on those domains.
 
-确认脚本已对对应域名启用（如 `www.bilibili.com`、`www.youtube.com`）并硬刷新。Tampermonkey 需获得在这些域名上运行的权限。
+确认脚本已对对应域名启用（如 `www.bilibili.com`、`www.youtube.com`、`www.zhihu.com`、`zhida.zhihu.com`）并硬刷新。Tampermonkey 需获得在这些域名上运行的权限。
 
 ---
 

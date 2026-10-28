@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Anti-Recommend — Hide YouTube & Bilibili Video Recommendations — YouTube Bilibili unhook & clean
+// @name         Anti-Recommend — Hide YouTube & Bilibili & Zhihu Recommendations — YouTube Bilibili Zhihu unhook & clean
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.6.2
-// @description  Remove sidebar/end-screen recommendations, disable autoplay, and redirect blocked search URLs on YouTube and Bilibili (ad blocking moved to AntiAds)
+// @version      1.7.0
+// @description  Remove recommendations/hot lists, disable autoplay, and redirect distracting entry pages on YouTube, Bilibili, and Zhihu (ad blocking moved to AntiAds)
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
 // @match        https://m.youtube.com/*
@@ -10,6 +10,10 @@
 // @match        https://www.bilibili.com/*
 // @match        https://www.bilibili.com/video/*
 // @match        https://www.bilibili.com/bangumi/*
+// @match        https://www.zhihu.com/*
+// @match        https://zhihu.com/*
+// @match        https://zhuanlan.zhihu.com/*
+// @match        https://zhida.zhihu.com/*
 // @run-at       document-start
 // @grant        none
 // @license      MIT
@@ -66,6 +70,20 @@
           return true;
         }
       }
+    }
+
+    // Zhihu: homepage feed + hot list → 直达
+    if (
+      (hostname === 'www.zhihu.com' || hostname === 'zhihu.com') &&
+      (pathname === '/' ||
+        pathname === '' ||
+        pathname === '/index' ||
+        pathname === '/index.html' ||
+        pathname === '/hot' ||
+        pathname.startsWith('/hot/'))
+    ) {
+      location.replace('https://zhida.zhihu.com');
+      return true;
     }
 
     return false;
@@ -187,6 +205,43 @@
     .bpx-player-ending-countdown,
     .bpx-player-upnext,
     .bpx-player-ending-overlay .ending-countdown {
+      display: none !important;
+    }
+
+    /* ===== Zhihu ===== */
+
+    /* Hot-search sidebar ("大家都在搜") */
+    .HotSearchCard,
+    [class*="HotSearchCard"] {
+      display: none !important;
+    }
+
+    /* Article / answer topic tags */
+    .Post-topics,
+    .Post-Topics,
+    .Post-topicsAndReviewer,
+    .TopicList,
+    .ContentItem-meta .Popover + .Tag,
+    .QuestionHeader-topics,
+    .QuestionTopic,
+    .Tag.Topic,
+    a.TopicLink {
+      display: none !important;
+    }
+
+    /* Bottom "推荐阅读" and similar recommendation blocks */
+    .Recommendations-Main,
+    .Recommendations-footer,
+    .Post-RelatedReadings,
+    [class*="RelatedReadings"],
+    [class*="Recommendations-Main"] {
+      display: none !important;
+    }
+
+    /* Topstory / hot feed leftovers (if redirect missed) */
+    .Topstory-mainColumn .TopstoryItem--advertCard,
+    .HotList,
+    .HotList-list {
       display: none !important;
     }
   `;
@@ -548,6 +603,138 @@
     hideSelector('.right-container .pop-video');
   }
 
+  // ── Zhihu recommendation / hot-list hiding ──────────────────────────────
+
+  function hideElement(el) {
+    if (!el || el.nodeType !== 1) return;
+    el.style.setProperty('display', 'none', 'important');
+  }
+
+  function hideClosestBlock(el, maxDepth = 8) {
+    let cur = el;
+    for (let i = 0; i < maxDepth && cur && cur !== document.body; i++) {
+      const parent = cur.parentElement;
+      if (!parent) break;
+      // Prefer a card-sized ancestor (not the whole page/main).
+      const childCount = parent.children.length;
+      if (
+        childCount >= 2 &&
+        childCount <= 12 &&
+        parent !== document.body &&
+        parent !== document.documentElement &&
+        !(parent.matches && parent.matches('main, #root, body, html'))
+      ) {
+        hideElement(parent);
+        return parent;
+      }
+      cur = parent;
+    }
+    hideElement(el);
+    return el;
+  }
+
+  function findElementsByExactText(text) {
+    const out = [];
+    const walker = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_ELEMENT);
+    let node;
+    while ((node = walker.nextNode())) {
+      // Prefer leaf-ish nodes whose own text matches (ignore deep descendants).
+      if (node.children.length > 6) continue;
+      const own = [...node.childNodes]
+        .filter(n => n.nodeType === 3)
+        .map(n => n.textContent.trim())
+        .join('');
+      const compact = (own || (node.children.length === 0 ? (node.textContent || '').trim() : '')).replace(/\s+/g, '');
+      if (compact === text.replace(/\s+/g, '')) out.push(node);
+    }
+    return out;
+  }
+
+  function findElementsContainingText(substr, maxTextLen = 80) {
+    const out = [];
+    const needle = substr.replace(/\s+/g, '');
+    const walker = document.createTreeWalker(document.body || document.documentElement, NodeFilter.SHOW_ELEMENT);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.children.length > 4) continue;
+      const t = (node.textContent || '').replace(/\s+/g, '');
+      if (!t || t.length > maxTextLen) continue;
+      if (t.includes(needle)) out.push(node);
+    }
+    return out;
+  }
+
+  function hideZhihuNavItems() {
+    document.querySelectorAll('header a, .AppHeader a, [role="banner"] a').forEach(a => {
+      const t = (a.textContent || '').replace(/\s+/g, '').trim();
+      if (t === '推荐' || t === '热榜') hideElement(a);
+    });
+  }
+
+  function hideZhihuHotAndTopics() {
+    hideSelector('.HotSearchCard');
+    hideSelector('[class*="HotSearchCard"]');
+    hideSelector('.Post-topics');
+    hideSelector('.Post-Topics');
+    hideSelector('.Post-topicsAndReviewer');
+    hideSelector('.TopicList');
+    hideSelector('.QuestionHeader-topics');
+    hideSelector('.QuestionTopic');
+    hideSelector('.Tag.Topic');
+    hideSelector('a.TopicLink');
+    hideSelector('.Recommendations-Main');
+    hideSelector('.Recommendations-footer');
+    hideSelector('.Post-RelatedReadings');
+    hideSelector('[class*="RelatedReadings"]');
+    hideSelector('.HotList');
+    hideSelector('.HotList-list');
+
+    // Text fallbacks for hashed/class-unstable blocks
+    findElementsByExactText('大家都在搜').forEach(el => hideClosestBlock(el, 6));
+    findElementsByExactText('推荐阅读').forEach(el => hideClosestBlock(el, 8));
+  }
+
+  function hideZhihuZhidaExtras() {
+    // Bottom discovery: 推荐知识库 + 想了解点什么?
+    const kbTitles = findElementsByExactText('推荐知识库');
+    const askTitles = findElementsByExactText('想了解点什么?')
+      .concat(findElementsByExactText('想了解点什么？'));
+
+    [...kbTitles, ...askTitles].forEach(el => hideClosestBlock(el, 10));
+
+    // If both titles share a common ancestor, hide that shared section once.
+    if (kbTitles[0] && askTitles[0]) {
+      let a = kbTitles[0];
+      const bSet = new Set();
+      let b = askTitles[0];
+      for (let i = 0; i < 12 && b; i++) {
+        bSet.add(b);
+        b = b.parentElement;
+      }
+      for (let i = 0; i < 12 && a; i++) {
+        if (bSet.has(a) && a !== document.body && a !== document.documentElement) {
+          hideElement(a);
+          break;
+        }
+        a = a.parentElement;
+      }
+    }
+
+    // Sidebar promo chip / history entry
+    findElementsContainingText('Zhihu CLI', 60).forEach(el => {
+      const row = el.closest('a, li, button, [role="listitem"]') || el;
+      hideElement(row);
+    });
+  }
+
+  function hideZhihuRecommendations() {
+    hideZhihuNavItems();
+    hideZhihuHotAndTopics();
+    if (location.hostname.includes('zhida.zhihu.com')) {
+      hideZhihuZhidaExtras();
+    }
+  }
+
   // ── Autoplay prevention ─────────────────────────────────────────────────
 
   function isElementOn(el) {
@@ -727,8 +914,9 @@
     const host = location.hostname;
     const isYT = host.includes('youtube.com');
     const isBili = host.includes('bilibili.com');
+    const isZhihu = host.includes('zhihu.com');
 
-    if (isBili && maybeRedirectAwayFromSuperSearch()) return;
+    if ((isBili || isZhihu) && maybeRedirectAwayFromSuperSearch()) return;
 
     // End-screen scan (own throttle)
     if (isYT) {
@@ -736,6 +924,8 @@
       scanAndHideEndScreens();
       preventYouTubeReplay();
     }
+
+    if (isZhihu) hideZhihuRecommendations();
 
     // Autoplay toggle
     if (now - _lastAutoplayDisable >= AUTOPLAY_COOLDOWN) {
@@ -757,7 +947,13 @@
       setTimeout(() => {
         const host = location.hostname;
         if (host.includes('youtube.com')) scanAndHideEndScreens();
-        if (host.includes('youtube.com') || host.includes('bilibili.com')) periodicTasks();
+        if (
+          host.includes('youtube.com') ||
+          host.includes('bilibili.com') ||
+          host.includes('zhihu.com')
+        ) {
+          periodicTasks();
+        }
       }, delay);
     });
   }
@@ -778,6 +974,9 @@
     } else if (host.includes('bilibili.com')) {
       if (maybeRedirectAwayFromSuperSearch()) return;
       hideBilibiliRecommendations();
+    } else if (host.includes('zhihu.com')) {
+      if (maybeRedirectAwayFromSuperSearch()) return;
+      hideZhihuRecommendations();
     }
   }
 
