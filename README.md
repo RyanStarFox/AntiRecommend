@@ -79,7 +79,7 @@
 
 ---
 
-### Step 2 — Install Anti-Recommend / 安装脚本
+### Step 2 — Install Anti Recommend / 安装脚本
 
 #### Option A — Greasy Fork（推荐 / Recommended）
 
@@ -138,7 +138,7 @@ Once installed, the script runs automatically on matching pages — no extra set
    - Tampermonkey 默认会自动检查更新；也可在 Dashboard 中手动点击 **Check for userscript updates**
    - Userscripts 需重新导入新版本，或通过 iCloud 同步更新
 
-> 当前最新版本 / Latest version: **v1.7.1**
+> 当前最新版本 / Latest version: **v1.7.2**
 
 ---
 
@@ -173,9 +173,9 @@ Anti-Recommend 采用多层策略清理页面，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.7.1**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.7.2**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.7.1**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.7.2**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**

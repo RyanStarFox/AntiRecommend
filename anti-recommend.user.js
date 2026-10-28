@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Anti-Recommend — Hide YouTube & Bilibili & Zhihu Recommendations
+// @name         Anti Recommend
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.7.1
+// @version      1.7.2
 // @description  Remove recommendations/hot lists, disable autoplay, and redirect distracting entry pages on YouTube, Bilibili, and Zhihu (ad blocking moved to AntiAds)
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
