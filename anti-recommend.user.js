@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.7.3
+// @version      1.7.4
 // @description  Remove recommendations/hot lists, disable autoplay, and redirect distracting entry pages on YouTube, Bilibili, and Zhihu (ad blocking moved to AntiAds)
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -212,8 +212,18 @@
 
     /* Hot-search sidebar ("大家都在搜") */
     .HotSearchCard,
-    [class*="HotSearchCard"] {
+    [class*="HotSearchCard"],
+    div:has(> .HotSearchCard),
+    [data-smart-sticky-anchor]:has(.HotSearchCard),
+    .Search-container [class*="HotSearchCard"] {
       display: none !important;
+      visibility: hidden !important;
+      height: 0 !important;
+      max-height: 0 !important;
+      overflow: hidden !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
     }
 
     /* Article / answer topic tags */
@@ -671,9 +681,42 @@
     });
   }
 
+  function nukeZhihuHotSearch() {
+    const roots = new Set();
+
+    document.querySelectorAll('.HotSearchCard, [class*="HotSearchCard"]').forEach(el => {
+      const root = el.closest('.HotSearchCard') || el;
+      roots.add(root);
+      const sticky = root.closest('[data-smart-sticky-anchor]') || root.parentElement;
+      if (sticky && sticky !== document.body) roots.add(sticky);
+    });
+
+    // Title / refresh-button fallbacks when class names hash away
+    findElementsByExactText('大家都在搜').forEach(el => {
+      const card = el.closest('.HotSearchCard, [class*="HotSearch"]') || hideClosestBlock(el, 6);
+      if (card) roots.add(card);
+    });
+    document.querySelectorAll('button').forEach(btn => {
+      if ((btn.textContent || '').replace(/\s+/g, '') !== '换一换') return;
+      const card = btn.closest('.HotSearchCard, [class*="HotSearch"]');
+      if (card) roots.add(card);
+    });
+
+    roots.forEach(el => {
+      if (!el || el === document.body || el === document.documentElement) return;
+      el.setAttribute('data-anti-recommend-hidden', '1');
+      el.style.setProperty('display', 'none', 'important');
+      el.style.setProperty('visibility', 'hidden', 'important');
+      el.style.setProperty('height', '0', 'important');
+      el.style.setProperty('max-height', '0', 'important');
+      el.style.setProperty('overflow', 'hidden', 'important');
+      el.style.setProperty('margin', '0', 'important');
+      el.style.setProperty('padding', '0', 'important');
+    });
+  }
+
   function hideZhihuHotAndTopics() {
-    hideSelector('.HotSearchCard');
-    hideSelector('[class*="HotSearchCard"]');
+    nukeZhihuHotSearch();
     hideSelector('.Post-topics');
     hideSelector('.Post-Topics');
     hideSelector('.Post-topicsAndReviewer');
@@ -690,7 +733,6 @@
     hideSelector('.HotList-list');
 
     // Text fallbacks for hashed/class-unstable blocks
-    findElementsByExactText('大家都在搜').forEach(el => hideClosestBlock(el, 6));
     findElementsByExactText('推荐阅读').forEach(el => hideClosestBlock(el, 8));
   }
 
