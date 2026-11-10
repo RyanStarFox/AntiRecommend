@@ -22,6 +22,7 @@
 | 🎬 | Hide in-player end-screen recommendations | 隐藏播放器内结束页推荐 |
 | ⏸️ | Hide pause overlay suggestions (YouTube) | 隐藏暂停时的推荐浮层（YouTube） |
 | 🔥 | Hide Zhihu hot search / topic tags / 推荐阅读 | 隐藏知乎热搜、话题 Tag、推荐阅读 |
+| 🔎 | Hide Bilibili search hot list & promo placeholders | 隐藏 B 站搜索热搜与搜索框推荐占位 |
 | 🧭 | Clean Zhihu Zhida discovery widgets | 清理知乎直达推荐知识库与建议问题 |
 | 🔁 | Disable autoplay / auto-advance | 关闭自动播放 / 自动连播 |
 | 🔀 | Redirect distracting homepage & search URLs | 重定向干扰性首页与搜索 URL |
@@ -138,7 +139,7 @@ Once installed, the script runs automatically on matching pages — no extra set
    - Tampermonkey 默认会自动检查更新；也可在 Dashboard 中手动点击 **Check for userscript updates**
    - Userscripts 需重新导入新版本，或通过 iCloud 同步更新
 
-> 当前最新版本 / Latest version: **v1.7.4**
+> 当前最新版本 / Latest version: **v1.7.5**
 
 ---
 
@@ -173,9 +174,9 @@ Anti-Recommend 采用多层策略清理页面，同时不影响正常播放：
 **Q: Recommendations still appear after updating?**
 **问：更新后推荐仍然出现？**
 
-Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.7.4**).
+Hard-refresh the page (`Cmd+Shift+R` / `Ctrl+Shift+R`) and confirm your userscript manager shows the latest version (currently **v1.7.5**).
 
-硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.7.4**）。
+硬刷新页面（`Cmd+Shift+R` / `Ctrl+Shift+R`），并确认脚本管理器中版本为最新（当前 **v1.7.5**）。
 
 **Q: Does this affect video playback or the progress bar?**
 **问：会影响视频播放或进度条吗？**

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.7.4
+// @version      1.7.5
 // @description  Remove recommendations/hot lists, disable autoplay, and redirect distracting entry pages on YouTube, Bilibili, and Zhihu (ad blocking moved to AntiAds)
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -205,6 +205,15 @@
     .bpx-player-ending-countdown,
     .bpx-player-upnext,
     .bpx-player-ending-overlay .ending-countdown {
+      display: none !important;
+    }
+
+    /* Search dropdown: bilibili热搜 (keep 搜索历史) */
+    .search-panel .trending,
+    .search-panel-popover .trending,
+    .nav-search-panel .trending,
+    .search-panel .trendings-double,
+    .search-panel .trending-item {
       display: none !important;
     }
 
@@ -593,6 +602,42 @@
     hideSelector('ytm-item-section-renderer#related');
   }
 
+  const BILI_NEUTRAL_SEARCH_PLACEHOLDER = '输入关键字搜索';
+
+  function clearBilibiliSearchPlaceholders() {
+    document.querySelectorAll('.nav-search-input, input.nav-search-input').forEach(input => {
+      const ph = (input.getAttribute('placeholder') || '').trim();
+      // Keep the neutral default; wipe promotional trending placeholders.
+      if (ph && ph !== BILI_NEUTRAL_SEARCH_PLACEHOLDER) {
+        input.setAttribute('placeholder', BILI_NEUTRAL_SEARCH_PLACEHOLDER);
+        input.placeholder = BILI_NEUTRAL_SEARCH_PLACEHOLDER;
+      }
+      const title = (input.getAttribute('title') || '').trim();
+      if (title && title !== BILI_NEUTRAL_SEARCH_PLACEHOLDER) {
+        input.removeAttribute('title');
+      }
+    });
+  }
+
+  function hideBilibiliSearchTrending() {
+    hideSelector('.search-panel .trending');
+    hideSelector('.search-panel-popover .trending');
+    hideSelector('.nav-search-panel .trending');
+    hideSelector('.search-panel .trendings-double');
+    hideSelector('.search-panel .trending-item');
+
+    // Text fallback if class names change
+    document.querySelectorAll('.search-panel .title, .search-panel-popover .title').forEach(el => {
+      const t = (el.textContent || '').replace(/\s+/g, '');
+      if (t === 'bilibili热搜' || t === '热搜') {
+        const block = el.closest('.trending') || el.parentElement;
+        if (block) hideElement(block);
+      }
+    });
+
+    clearBilibiliSearchPlaceholders();
+  }
+
   function hideBilibiliRecommendations() {
     hideSelector('#reco_list');
     hideSelector('.recommend-list-v1');
@@ -611,6 +656,7 @@
     hideSelector('.popular-video-container');
     hideSelector('#popular-video');
     hideSelector('.right-container .pop-video');
+    hideBilibiliSearchTrending();
   }
 
   // ── Zhihu recommendation / hot-list hiding ──────────────────────────────
