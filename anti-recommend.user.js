@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Anti-Recommend
 // @namespace    https://github.com/RyanStarFox/AntiRecommend
-// @version      1.7.5
+// @version      1.7.6
 // @description  Remove recommendations/hot lists, disable autoplay, and redirect distracting entry pages on YouTube, Bilibili, and Zhihu (ad blocking moved to AntiAds)
 // @author       ryanstarfox
 // @match        https://www.youtube.com/*
@@ -603,11 +603,49 @@
   }
 
   const BILI_NEUTRAL_SEARCH_PLACEHOLDER = '输入关键字搜索';
+  const BILI_EMPTY_DEFAULT_WORD = Object.freeze({
+    show: '',
+    word: '',
+    url: '',
+    goto_type: 0,
+    seid: ''
+  });
+
+  function setMaybeRef(target, key, value) {
+    if (!target || !(key in target)) return false;
+    try {
+      const cur = target[key];
+      if (cur && typeof cur === 'object' && 'value' in cur) {
+        cur.value = value;
+      } else {
+        target[key] = value;
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function clearBilibiliVueDefaultWord(root) {
+    let el = root;
+    for (let i = 0; i < 8 && el; i++) {
+      const vue = el.__vueParentComponent || el.__vue__;
+      if (vue) {
+        const scopes = [vue.setupState, vue.ctx, vue.$data].filter(Boolean);
+        for (const scope of scopes) {
+          setMaybeRef(scope, 'defaultWord', { ...BILI_EMPTY_DEFAULT_WORD });
+          setMaybeRef(scope, 'placeholder', BILI_NEUTRAL_SEARCH_PLACEHOLDER);
+        }
+      }
+      el = el.parentElement;
+    }
+  }
 
   function clearBilibiliSearchPlaceholders() {
-    document.querySelectorAll('.nav-search-input, input.nav-search-input').forEach(input => {
+    document.querySelectorAll(
+      '.nav-search-input, input.nav-search-input, .search-input-el, input.search-input-el'
+    ).forEach(input => {
       const ph = (input.getAttribute('placeholder') || '').trim();
-      // Keep the neutral default; wipe promotional trending placeholders.
       if (ph && ph !== BILI_NEUTRAL_SEARCH_PLACEHOLDER) {
         input.setAttribute('placeholder', BILI_NEUTRAL_SEARCH_PLACEHOLDER);
         input.placeholder = BILI_NEUTRAL_SEARCH_PLACEHOLDER;
@@ -616,10 +654,73 @@
       if (title && title !== BILI_NEUTRAL_SEARCH_PLACEHOLDER) {
         input.removeAttribute('title');
       }
+      clearBilibiliVueDefaultWord(input);
     });
+
+    document.querySelectorAll('#nav-searchform, .search-input-container, .center-search__bar')
+      .forEach(clearBilibiliVueDefaultWord);
+  }
+
+  function getNearbyBilibiliSearchInput(fromEl) {
+    if (!fromEl || !fromEl.closest) return document.querySelector('.nav-search-input, .search-input-el');
+    const wrap = fromEl.closest(
+      '#nav-searchform, .center-search__bar, .search-input-container, .nav-search-content, .search-input-wrap'
+    );
+    if (wrap) {
+      return wrap.querySelector('.nav-search-input, .search-input-el, input[type="text"]') || null;
+    }
+    if (fromEl.matches && fromEl.matches('.nav-search-input, .search-input-el')) return fromEl;
+    return document.querySelector('.nav-search-input, .search-input-el');
+  }
+
+  function isEmptyBilibiliSearchInput(input) {
+    return !input || !(input.value || '').trim();
+  }
+
+  function blockEmptyBilibiliSearchEvent(e) {
+    const input = getNearbyBilibiliSearchInput(e.target);
+    if (!isEmptyBilibiliSearchInput(input)) return;
+    // Empty submit would fall back to Vue defaultWord (trending promo keyword).
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+  }
+
+  let _biliSearchBlockInstalled = false;
+  function installBilibiliEmptySearchBlock() {
+    if (_biliSearchBlockInstalled) return;
+    _biliSearchBlockInstalled = true;
+
+    document.addEventListener('submit', e => {
+      const form = e.target;
+      if (!form || !form.querySelector) return;
+      if (!form.matches('#nav-searchform') && !form.querySelector('.nav-search-input, .search-input-el')) return;
+      blockEmptyBilibiliSearchEvent(e);
+    }, true);
+
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Enter') return;
+      const t = e.target;
+      if (!t || !t.matches) return;
+      if (!t.matches('.nav-search-input, .search-input-el')) return;
+      if (!isEmptyBilibiliSearchInput(t)) return;
+      blockEmptyBilibiliSearchEvent(e);
+    }, true);
+
+    document.addEventListener('click', e => {
+      const btn = e.target && e.target.closest && e.target.closest(
+        '.nav-search-btn, .search-button, button.nav-search-btn'
+      );
+      if (!btn) return;
+      const input = getNearbyBilibiliSearchInput(btn);
+      if (!isEmptyBilibiliSearchInput(input)) return;
+      blockEmptyBilibiliSearchEvent(e);
+    }, true);
   }
 
   function hideBilibiliSearchTrending() {
+    installBilibiliEmptySearchBlock();
+
     hideSelector('.search-panel .trending');
     hideSelector('.search-panel-popover .trending');
     hideSelector('.nav-search-panel .trending');
@@ -637,6 +738,9 @@
 
     clearBilibiliSearchPlaceholders();
   }
+
+  // Install as soon as this declaration is evaluated.
+  installBilibiliEmptySearchBlock();
 
   function hideBilibiliRecommendations() {
     hideSelector('#reco_list');
